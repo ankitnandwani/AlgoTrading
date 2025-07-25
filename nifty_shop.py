@@ -15,10 +15,10 @@ print(nifty50_list)
 
 
 # 🔐 CONFIG: Add your credentials
-API_KEY = "55843575-c909-4195-858f-fe2ed5047748"
-API_SECRET = "44vl25z2bj"
-REDIRECT_URI = "https://google.com"
-ACCESS_TOKEN = "eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiIyMzQ3MDEiLCJqdGkiOiI2ODgyYjRiNWFjN2FjYzc1MzE3NTYyODAiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6ZmFsc2UsImlhdCI6MTc1MzM5NjQwNSwiaXNzIjoidWRhcGktZ2F0ZXdheS1zZXJ2aWNlIiwiZXhwIjoxNzUzNDgwODAwfQ.dccbezaCV7Zt5e_5_HQDlMJVwOjM3zKn89lbPKBqURU"  # obtain using OAuth flow once
+API_KEY = "YOUR_API_KEY"
+API_SECRET = "YOUR_API_SECRET"
+REDIRECT_URI = "YOUR_REDIRECT_URI"
+ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"  # obtain using OAuth flow once
 
 # 📦 Setup API client
 config = upstox_client.Configuration()
