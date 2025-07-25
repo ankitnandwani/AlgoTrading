@@ -29,6 +29,8 @@ api_client = upstox_client.ApiClient(config)
 login_api = upstox_client.LoginApi(api_client)
 history_api = upstox_client.HistoryV3Api(api_client)
 quote_api = upstox_client.MarketQuoteV3Api(api_client)
+portfolio_api = upstox_client.PortfolioApi(api_client)
+api_version = '2.0'
 
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_key, n=19, days_buffer=30):
@@ -84,17 +86,31 @@ def compute_top5_nifty_below_ma():
             print("ma20 = " + str(ma20))
             dev = ((ltp - ma20) / ma20) * 100
             if ltp < ma20:
-                results.append((sym, ltp, ma20, dev))
+                results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
             print(f"{sym} error:", e)
 
-    df = pd.DataFrame(results, columns=["Symbol","LTP","MA20","Deviation%"])
+    df = pd.DataFrame(results, columns=["Symbol","LTP","MA20","Deviation%", "Instrument_token"])
     df = df[df["Deviation%"] < 0].sort_values("Deviation%")
     return df.head(5)
+
+def get_current_portfolio(top5):
+    portfolio = portfolio_api.get_holdings(api_version)
+    print(portfolio)
+    for _, row in top5.iterrows():
+        print(row['Instrument_token'])
+        match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
+        if match:
+            print("Match found:", match)
+            print("continue searching")
+        else:
+            print("No match found.")
+            #Buy stock and exit
 
 if __name__ == "__main__":
     top5 = compute_top5_nifty_below_ma()
     print(top5.to_string(index=False))
+    get_current_portfolio(top5)
 
 
 
