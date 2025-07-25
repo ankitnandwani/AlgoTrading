@@ -17,8 +17,9 @@ print(nifty50_list)
 # 🔐 CONFIG: Add your credentials
 API_KEY = "YOUR_API_KEY"
 API_SECRET = "YOUR_API_SECRET"
-REDIRECT_URI = "YOUR_REDIRECT_URI"
+REDIRECT_URI = "https://google.com"
 ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"  # obtain using OAuth flow once
+
 
 # 📦 Setup API client
 config = upstox_client.Configuration()
@@ -79,9 +80,11 @@ def compute_top5_nifty_below_ma():
             if len(closes) < 19:
                 continue
 
-            ma20 = (sum(closes) + ltp) / 20
+            ma20 = (sum(closes)) / 20
+            print("ma20 = " + str(ma20))
             dev = ((ltp - ma20) / ma20) * 100
-            results.append((sym, ltp, ma20, dev))
+            if ltp < ma20:
+                results.append((sym, ltp, ma20, dev))
         except ApiException as e:
             print(f"{sym} error:", e)
 
