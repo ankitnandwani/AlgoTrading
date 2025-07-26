@@ -12,8 +12,6 @@ print(nifty50_list)
 
 
 
-
-
 # 🔐 CONFIG: Add your credentials
 API_KEY = "YOUR_API_KEY"
 API_SECRET = "YOUR_API_SECRET"
@@ -30,6 +28,7 @@ login_api = upstox_client.LoginApi(api_client)
 history_api = upstox_client.HistoryV3Api(api_client)
 quote_api = upstox_client.MarketQuoteV3Api(api_client)
 portfolio_api = upstox_client.PortfolioApi(api_client)
+order_api = upstox_client.OrderApiV3(api_client)
 api_version = '2.0'
 
 # 🛠 Helper: Get historical closes
@@ -94,10 +93,18 @@ def compute_top5_nifty_below_ma():
     df = df[df["Deviation%"] < 0].sort_values("Deviation%")
     return df.head(5)
 
-def get_current_portfolio(top5):
+def buy(instrument_key):
+    body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
+                                             price=0, tag="nifty_shop", instrument_token=instrument_key,
+                                             order_type="MARKET", transaction_type="BUY", disclosed_quantity=0,
+                                             trigger_price=0.0, is_amo=True, slice=True)
+    api_response = order_api.place_order(body)
+    print(api_response)
+
+def get_current_portfolio(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
     print(portfolio)
-    for _, row in top5.iterrows():
+    for _, row in top5stocks.iterrows():
         print(row['Instrument_token'])
         match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
         if match:
@@ -106,11 +113,39 @@ def get_current_portfolio(top5):
         else:
             print("No match found.")
             #Buy stock and exit
+            buy(row['Instrument_token'])
+            exit("Buy successful. Bought : " + row['Instrument_token'] + " - " + row['Symbol'])
+
+#all 5 stocks available for buy are already in portfolio
+#so we will average our worst performer from the list with cmp
+def averaging(top5stocks):
+    portfolio = portfolio_api.get_holdings(api_version)
+    worst_deviation = None
+    stock_to_average = None
+    for _, row in top5stocks.iterrows():
+        match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
+        if match:
+            avg_buy_price = match.average_price
+            current_price = row['LTP']  # Already calculated in top5
+            if avg_buy_price > 0:  # Prevent division by zero
+                deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
+                if worst_deviation is None or deviation < worst_deviation:
+                    worst_deviation = deviation
+                    stock_to_average = row
+
+    if stock_to_average is not None:
+        print(f"Averaging stock: {stock_to_average['Symbol']} with deviation: {worst_deviation:.2f}%")
+        buy(stock_to_average['Instrument_token'])
+        exit("Averaging successful. Bought more of: " + stock_to_average['Symbol'])
+    else:
+        print("No eligible stock found in portfolio for averaging.")
+
 
 if __name__ == "__main__":
     top5 = compute_top5_nifty_below_ma()
     print(top5.to_string(index=False))
     get_current_portfolio(top5)
+    averaging(top5)
 
 
 
