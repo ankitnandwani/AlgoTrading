@@ -103,7 +103,6 @@ def buy(instrument_key):
 
 def get_current_portfolio(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
-    print(portfolio)
     for _, row in top5stocks.iterrows():
         print(row['Instrument_token'])
         match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
@@ -129,13 +128,15 @@ def averaging(top5stocks):
             current_price = row['LTP']  # Already calculated in top5
             if avg_buy_price > 0:  # Prevent division by zero
                 deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
+                print(row['Symbol'] + " has deviation = " + str(deviation))
                 if worst_deviation is None or deviation < worst_deviation:
                     worst_deviation = deviation
                     stock_to_average = row
 
     if stock_to_average is not None:
         print(f"Averaging stock: {stock_to_average['Symbol']} with deviation: {worst_deviation:.2f}%")
-        buy(stock_to_average['Instrument_token'])
+        if worst_deviation<3.14:
+            buy(stock_to_average['Instrument_token'])
         exit("Averaging successful. Bought more of: " + stock_to_average['Symbol'])
     else:
         print("No eligible stock found in portfolio for averaging.")
