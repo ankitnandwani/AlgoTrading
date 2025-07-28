@@ -1,3 +1,5 @@
+from urllib.parse import urlparse, parse_qs
+
 from niftystocks import ns
 import datetime
 import pandas as pd
@@ -7,7 +9,58 @@ import json
 from datetime import datetime, timedelta, UTC
 import streamlit as st
 
+# 🔐 Your Upstox app credentials
+API_KEY = "YOUR_API_KEY"
+API_SECRET = "YOUR_API_SECRET"
+REDIRECT_URI = "https://niftyshop.streamlit.app/"  # Must match Upstox app settings
+
 st.set_page_config(page_title="Nifty Shop", layout="centered")
+
+# 🔁 Step 1: OAuth Login
+st.title("🔐 Login to Upstox")
+
+# OAuth login URL
+login_url = (
+    f"https://api.upstox.com/v2/login/authorization/dialog"
+    f"?response_type=code"
+    f"&client_id={API_KEY}"
+    f"&redirect_uri={REDIRECT_URI}"
+    f"&scope=read%20trade"
+)
+
+st.markdown(f"[Login with Upstox]({login_url})")
+
+# Step 2: Ask user to paste full redirected URL
+redirected_url = st.text_input("Paste the full redirected URL here after login:")
+auth_code = None
+
+if redirected_url:
+    try:
+        parsed_url = urlparse(redirected_url)
+        query = parse_qs(parsed_url.query)
+        auth_code = query.get("code", [None])[0]
+        if not auth_code:
+            st.error("Authorization code not found in URL.")
+    except Exception as e:
+        st.error(f"Failed to extract code: {e}")
+
+#01406508
+# Step 3: Exchange auth_code for access_token
+if auth_code:
+    try:
+        api = upstox_client.LoginApi()
+        token_resp = api.get_access_token(
+            client_id=API_KEY,
+            client_secret=API_SECRET,
+            code=auth_code,
+            redirect_uri=REDIRECT_URI,
+            grant_type="authorization_code"
+        )
+        access_token = token_resp.access_token
+        st.success("Access Token received!")
+        st.code(access_token, language="bash")
+    except Exception as e:
+        st.error(f"Failed to get access token: {e}")
 
 
 # 🛠 Helper: Get historical closes
@@ -115,11 +168,9 @@ def averaging(top5stocks):
 
 
 # 🔐 UI Components
-st.title("📊 Nifty50 MA20 Analyzer & Buyer")
-access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
-run = st.button("🚀 Run Analysis")
+st.title("📊 Nifty Shop")
 
-if run:
+if access_token and st.button("🚀 Analyze & Trade"):
     try:
         nifty50_list = ns.get_nifty50()
 
