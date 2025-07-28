@@ -5,31 +5,10 @@ import upstox_client
 from upstox_client.rest import ApiException
 import json
 from datetime import datetime, timedelta, UTC
+import streamlit as st
 
-#get current list for Nifty50 stocks
-nifty50_list = ns.get_nifty50()
-print(nifty50_list)
+st.set_page_config(page_title="Nifty Shop", layout="centered")
 
-
-
-# 🔐 CONFIG: Add your credentials
-API_KEY = "YOUR_API_KEY"
-API_SECRET = "YOUR_API_SECRET"
-REDIRECT_URI = "https://google.com"
-ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"  # obtain using OAuth flow once
-
-
-# 📦 Setup API client
-config = upstox_client.Configuration()
-config.access_token = ACCESS_TOKEN
-api_client = upstox_client.ApiClient(config)
-
-login_api = upstox_client.LoginApi(api_client)
-history_api = upstox_client.HistoryV3Api(api_client)
-quote_api = upstox_client.MarketQuoteV3Api(api_client)
-portfolio_api = upstox_client.PortfolioApi(api_client)
-order_api = upstox_client.OrderApiV3(api_client)
-api_version = '2.0'
 
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_key, n=19, days_buffer=30):
@@ -71,23 +50,20 @@ def compute_top5_nifty_below_ma():
 
     for sym in nifty50_list:
         try:
-            print('NSE_EQ|'+sym)
             instrument_key = symbol_to_key.get(sym)
-            print(instrument_key)
+            if not instrument_key:
+                continue
             ltp = get_ltp(instrument_key, sym)
-            print("ltp = " + str(ltp))
             closes = get_last_n_closes(instrument_key)
-            print("closes = " + str(closes))
             if len(closes) < 19:
                 continue
 
             ma20 = (sum(closes)) / 20
-            print("ma20 = " + str(ma20))
             dev = ((ltp - ma20) / ma20) * 100
             if ltp < ma20:
                 results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
-            print(f"{sym} error:", e)
+            st.warning(f"{sym} error: {e}")
 
     df = pd.DataFrame(results, columns=["Symbol","LTP","MA20","Deviation%", "Instrument_token"])
     df = df[df["Deviation%"] < 0].sort_values("Deviation%")
@@ -95,25 +71,23 @@ def compute_top5_nifty_below_ma():
 
 def buy(instrument_key, ltp):
     body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
-                                             price=ltp, tag="nifty_shop", instrument_token=instrument_key,
-                                             order_type="LIMIT", transaction_type="BUY", disclosed_quantity=0,
-                                             trigger_price=0.0, is_amo=True, slice=True)
+                                             price=0.0, tag="nifty_shop", instrument_token=instrument_key,
+                                             order_type="MARKET", transaction_type="BUY", disclosed_quantity=0,
+                                             trigger_price=0.0, is_amo=False, slice=True)
     api_response = order_api.place_order(body)
-    print(api_response)
+    st.success(f"Buy order placed: {api_response}")
 
 def get_current_portfolio(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
     for _, row in top5stocks.iterrows():
-        print(row['Instrument_token'])
+        st.info(row['Instrument_token'])
         match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
         if match:
-            print("Match found:", match)
-            print("continue searching")
+            st.info(f"Already holding: {row['Symbol']}")
         else:
-            print("No match found.")
-            #Buy stock and exit
+            st.info(f"Buying new stock: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
-            exit("Buy successful. Bought : " + row['Instrument_token'] + " - " + row['Symbol'])
+            st.stop()
 
 #all 5 stocks available for buy are already in portfolio
 #so we will average our worst performer from the list with cmp
@@ -133,20 +107,54 @@ def averaging(top5stocks):
                     worst_deviation = deviation
                     stock_to_average = row
 
-    if stock_to_average is not None:
-        print(f"Averaging stock: {stock_to_average['Symbol']} with deviation: {worst_deviation:.2f}%")
-        if worst_deviation<3.14:
-            buy(stock_to_average['Instrument_token'])
-        exit("Averaging successful. Bought more of: " + stock_to_average['Symbol'])
+    if stock_to_average and worst_deviation < 3.14:
+        buy(stock_to_average['Instrument_token'], stock_to_average['LTP'])
+        st.success(f"Averaged: {stock_to_average['Symbol']} @ Deviation {worst_deviation:.2f}%")
     else:
-        print("No eligible stock found in portfolio for averaging.")
+        st.info("No eligible stock found in portfolio for averaging.")
 
 
-if __name__ == "__main__":
-    top5 = compute_top5_nifty_below_ma()
-    print(top5.to_string(index=False))
-    get_current_portfolio(top5)
-    averaging(top5)
+# 🔐 UI Components
+st.title("📊 Nifty50 MA20 Analyzer & Buyer")
+access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
+run = st.button("🚀 Run Analysis")
+
+if run:
+    try:
+        nifty50_list = ns.get_nifty50()
+
+        config = upstox_client.Configuration()
+        config.access_token = access_token
+        api_client = upstox_client.ApiClient(config)
+
+        login_api = upstox_client.LoginApi(api_client)
+        history_api = upstox_client.HistoryV3Api(api_client)
+        quote_api = upstox_client.MarketQuoteV3Api(api_client)
+        portfolio_api = upstox_client.PortfolioApi(api_client)
+        order_api = upstox_client.OrderApiV3(api_client)
+        api_version = '2.0'
+
+        # Global injection for helper functions
+        globals().update({
+            "nifty50_list": nifty50_list,
+            "history_api": history_api,
+            "quote_api": quote_api,
+            "portfolio_api": portfolio_api,
+            "order_api": order_api,
+            "api_version": api_version,
+        })
+
+        top5 = compute_top5_nifty_below_ma()
+        if not top5.empty:
+            st.subheader("📈 Top 5 Nifty Stocks Below MA20")
+            st.dataframe(top5)
+            get_current_portfolio(top5)
+            averaging(top5)
+        else:
+            st.info("No qualifying stocks found.")
+
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
 
 
