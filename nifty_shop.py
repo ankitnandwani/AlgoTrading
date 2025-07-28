@@ -93,10 +93,10 @@ def compute_top5_nifty_below_ma():
     df = df[df["Deviation%"] < 0].sort_values("Deviation%")
     return df.head(5)
 
-def buy(instrument_key):
+def buy(instrument_key, ltp):
     body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
-                                             price=0, tag="nifty_shop", instrument_token=instrument_key,
-                                             order_type="MARKET", transaction_type="BUY", disclosed_quantity=0,
+                                             price=ltp, tag="nifty_shop", instrument_token=instrument_key,
+                                             order_type="LIMIT", transaction_type="BUY", disclosed_quantity=0,
                                              trigger_price=0.0, is_amo=True, slice=True)
     api_response = order_api.place_order(body)
     print(api_response)
@@ -112,7 +112,7 @@ def get_current_portfolio(top5stocks):
         else:
             print("No match found.")
             #Buy stock and exit
-            buy(row['Instrument_token'])
+            buy(row['Instrument_token'], row['LTP'])
             exit("Buy successful. Bought : " + row['Instrument_token'] + " - " + row['Symbol'])
 
 #all 5 stocks available for buy are already in portfolio
