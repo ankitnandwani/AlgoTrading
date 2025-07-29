@@ -4,7 +4,7 @@ import pandas as pd
 import upstox_client
 from upstox_client.rest import ApiException
 import json
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
 
 st.set_page_config(page_title="Nifty Shop", layout="centered")
@@ -14,18 +14,20 @@ st.set_page_config(page_title="Nifty Shop", layout="centered")
 def get_last_n_closes(instrument_key, n=19, days_buffer=30):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
-    resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval= 1, to_date=to_date, from_date=from_date)
+    resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
+                                                   to_date=to_date, from_date=from_date)
     candles = resp.data.candles
     closes = [candle[4] for candle in candles]  # 4th index is 'close'
     return closes[-n:] if len(closes) >= n else []
 
+
 # 🛠 Helper: Get live LTP
 def get_ltp(instrument_key, sym):
     response = quote_api.get_ltp(instrument_key=instrument_key)
-    return response.data['NSE_EQ:'+sym].last_price
+    return response.data['NSE_EQ:' + sym].last_price
 
 
-#symbol to instrument key mapping
+# symbol to instrument key mapping
 def load_symbol_to_instrument_key_map(json_file="NSE.json"):
     with open(json_file, 'r') as f:
         instruments = json.load(f)
@@ -34,14 +36,15 @@ def load_symbol_to_instrument_key_map(json_file="NSE.json"):
 
     for inst in instruments:
         if (
-            inst.get("segment") == "NSE_EQ" and
-            inst.get("instrument_type") == "EQ" and
-            "trading_symbol" in inst and
-            "instrument_key" in inst
+                inst.get("segment") == "NSE_EQ" and
+                inst.get("instrument_type") == "EQ" and
+                "trading_symbol" in inst and
+                "instrument_key" in inst
         ):
             symbol_map[inst["trading_symbol"]] = inst["instrument_key"]
 
     return symbol_map
+
 
 # ✅ Main computation
 def compute_top5_nifty_below_ma():
@@ -65,32 +68,73 @@ def compute_top5_nifty_below_ma():
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
 
-    df = pd.DataFrame(results, columns=["Symbol","LTP","MA20","Deviation%", "Instrument_token"])
+    df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
     df = df[df["Deviation%"] < 0].sort_values("Deviation%")
     return df.head(5)
 
+
 def buy(instrument_key, ltp):
-    body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
-                                             price=0.0, tag="nifty_shop", instrument_token=instrument_key,
-                                             order_type="MARKET", transaction_type="BUY", disclosed_quantity=0,
-                                             trigger_price=0.0, is_amo=False, slice=True)
-    api_response = order_api.place_order(body)
-    st.success(f"Buy order placed: {api_response}")
+    # Get current IST time
+    now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
+    market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
+
+    # Determine order type and AMO status based on current time
+    if now_ist < market_close_time:
+        order_type = "MARKET"
+        price = 0.0
+        is_amo = False
+    else:
+        order_type = "LIMIT"
+        price = ltp
+        is_amo = True
+
+    # Display order details
+    st.subheader("🛒 Buy Order details")
+    st.markdown(f"""
+            **Instrument Token:** `{instrument_key}`  
+            **LTP:** `₹{ltp}`  
+            **Order Type:** `{order_type}`  
+            **Price:** `₹{price}`  
+            **AMO:** `{is_amo}`
+            """)
+
+    try:
+        body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
+                                                 price=price, tag="nifty_shop", instrument_token=instrument_key,
+                                                 order_type=order_type, transaction_type="BUY",
+                                                 disclosed_quantity=0,
+                                                 trigger_price=0.0, is_amo=is_amo, slice=True)
+        api_response = order_api.place_order(body)
+        st.success(f"✅ Buy order placed successfully: {api_response}")
+    except ApiException as e:
+        st.error(f"❌ Failed to place order: {e}")
+
 
 def get_current_portfolio(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
+    existing_holdings = {item.instrument_token for item in portfolio.data}
+    existing_orders = order_apiv1.get_order_details(api_version=api_version, tag="nifty_shop")
+    executed_order_tokens = {
+        order.instrument_token
+        for order in existing_orders.data
+        if order.status in {"complete"}  # relevant open statuses
+    }
     for _, row in top5stocks.iterrows():
-        st.info(row['Instrument_token'])
-        match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
-        if match:
+        token = row['Instrument_token']
+        symbol = row['Symbol']
+
+        if token in existing_holdings:
             st.info(f"Already holding: {row['Symbol']}")
+        elif token in executed_order_tokens:
+            st.info(f"Order already placed for: {symbol}")
         else:
             st.info(f"Buying new stock: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
             st.stop()
 
-#all 5 stocks available for buy are already in portfolio
-#so we will average our worst performer from the list with cmp
+
+# all 5 stocks available for buy are already in portfolio
+# so we will average our worst performer from the list with cmp
 def averaging(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
     worst_deviation = None
@@ -115,9 +159,9 @@ def averaging(top5stocks):
 
 
 # 🔐 UI Components
-st.title("📊 Nifty50 MA20 Analyzer & Buyer")
+st.title("📊 Nifty Shop")
 access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
-run = st.button("🚀 Run Analysis")
+run = st.button("🚀 Run Analysis and buy")
 
 if run:
     try:
@@ -132,6 +176,7 @@ if run:
         quote_api = upstox_client.MarketQuoteV3Api(api_client)
         portfolio_api = upstox_client.PortfolioApi(api_client)
         order_api = upstox_client.OrderApiV3(api_client)
+        order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
 
         # Global injection for helper functions
@@ -155,7 +200,3 @@ if run:
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
-
-
-
-
