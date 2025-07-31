@@ -113,7 +113,7 @@ def buy(instrument_key, ltp):
 def get_current_portfolio(top5stocks):
     portfolio = portfolio_api.get_holdings(api_version)
     existing_holdings = {item.instrument_token for item in portfolio.data}
-    existing_orders = order_apiv1.get_order_details(api_version=api_version, tag="nifty_shop")
+    existing_orders = order_apiv1.get_order_book(api_version=api_version)
     executed_order_tokens = {
         order.instrument_token
         for order in existing_orders.data
