@@ -52,14 +52,15 @@ def append_orders_to_excel(orders):
         "Exchange Time",
         "Transaction Type",
         "Order Status",
+        "Close",
         "Average Price",
         "Quantity",
+        "Total Holding",
+        "Investment",
+        "Value at close",
+        "Profit/Loss",
         "Raw JSON"
     ]
-
-    if not orders:
-        logging.info("No orders to append.")
-        return
 
     rows = []
     for o in orders:
