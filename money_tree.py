@@ -1,17 +1,18 @@
 import os
 import json
 import gspread
-from datetime import datetime, time
+from datetime import datetime
 import logging
+
+import yfinance as yf
 from dhanhq import dhanhq
 from google.oauth2.service_account import Credentials
 
 # === Configuration ===
-CLIENT_ID = os.getenv("DHAN_CLIENT_ID", "1100519107")
-ACCESS_TOKEN = os.getenv("DHAN_ACCESS_TOKEN", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzU2MzM2MjE3LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwMDUxOTEwNyJ9.cqUqvurBhtfhaRi5mAgt63m5KhEOrZOakVhqLcIw-di71LaxkJMT5Xw9kB-W8UVBgm4vXPzQhnARyqH0RsNZhw")
-GOOGLE_SHEET_URL = os.getenv("GOOGLE_SHEET_URL", "1VolFjhqktCaml8_TSuCvpjSIR4Yw6-Xi1MDEHVYlL6Y")
+CLIENT_ID = os.getenv("DHAN_CLIENT_ID", "YOUR_DHAN_CLIENT_ID")
+ACCESS_TOKEN = os.getenv("DHAN_ACCESS_TOKEN", "YOUR_DHAN_ACCESS_TOKEN")
+GOOGLE_SHEET_URL = os.getenv("GOOGLE_SHEET_URL", "YOUR_GOOGLE_SHEET_URL")
 SYMBOL = os.getenv("SYMBOL", "NIFTYBEES")
-SECURITY_ID = 14050  # Hardcoded ID for NIFTYBEES
 
 # === Logging setup ===
 logging.basicConfig(
@@ -42,10 +43,20 @@ def fetch_orders(dhan_client):
     logging.info(f"Found {len(filtered)} orders matching '{SYMBOL}' with traded status.")
     return filtered
 
-def get_closing_price(dhan_client):
+def get_closing_price():
+    """Fetch LTP of NIFTYBEES using yfinance"""
     try:
-        quote = dhan_client.get_quote(SECURITY_ID, 'NSE_EQ')
-        return quote['data']['lastPrice']
+        # Fetch data for NIFTYBEES on NSE
+        ticker = yf.Ticker(f"{SYMBOL}.NS")
+        # Get last 5 days of data to ensure we capture latest close
+        hist_data = ticker.history(period="5d")
+        if hist_data.empty:
+            logging.error("No historical data found from yfinance")
+            return 0
+        # Last available closing price (most recent trading day)
+        close = hist_data['Close'].iloc[-1]
+        logging.info(f"Fetched closing price: {close}")
+        return close
     except Exception as e:
         logging.error(f"Failed to fetch closing price: {e}")
         return 0
@@ -57,7 +68,7 @@ def get_portfolio_state(worksheet):
         return 0, 0.0
 
     last_row = records[-1]
-    return last_row.get("Total Holding", 0), last_row.get("Investment", 0.0)
+    return last_row.get("Total Holding", 0), last_row.get("Total Basic Investment", 0.0)
 
 def append_to_sheet(worksheet, data):
     """Append multiple rows efficiently"""
@@ -67,7 +78,7 @@ def append_to_sheet(worksheet, data):
     columns = [
         "Order ID", "Exchange Time", "Transaction Type", "Order Status",
         "Close", "Average Price", "Quantity", "Total Holding",
-        "Investment", "Value at close", "Profit/Loss", "Raw JSON"
+        "Investment", "Total Basic Investment", "Value at close", "Profit/Loss", "Raw JSON"
     ]
 
     # Write header if sheet is empty
@@ -78,7 +89,7 @@ def append_to_sheet(worksheet, data):
     for row in data:
         worksheet.append_row([row.get(col, "") for col in columns])
 
-def process_orders(orders, existing_ids, holding, investment):
+def process_orders(orders, existing_ids, holding, investment, closing_price):
     """Process new orders and update portfolio state"""
     new_rows = []
     today = datetime.now().date()
@@ -104,16 +115,21 @@ def process_orders(orders, existing_ids, holding, investment):
             holding = max(0, holding - qty)
             investment = holding * (investment / (holding + qty)) if holding else 0
 
+        value_at_close = holding * closing_price
         # Create order row
         new_rows.append({
             "Order ID": order_id,
             "Exchange Time": order['exchangeTime'],
             "Transaction Type": order['transactionType'],
             "Order Status": order['orderStatus'],
+            "close": closing_price,
             "Average Price": price,
             "Quantity": qty,
             "Total Holding": holding,
-            "Investment": investment,
+            "Investment": qty * price,
+            "Total Basic Investment": investment,
+            "Value at close": value_at_close,
+            "Profit/Loss": value_at_close - investment,
             "Raw JSON": json.dumps(order, default=str)
         })
 
@@ -129,13 +145,10 @@ def create_blank_row(holding, investment, closing_price):
     """Create placeholder row for days without orders"""
     value_at_close = holding * closing_price
     return {
-        "Exchange Time": datetime.combine(
-            datetime.now().date(),
-            time(15, 30)
-        ).strftime("%Y-%m-%dT%H:%M:%S"),
+        "Exchange Time": datetime.now().strftime("%-d-%b-%Y").lstrip("0"),
         "Close": closing_price,
         "Total Holding": holding,
-        "Investment": investment,
+        "Total Basic Investment": investment,
         "Value at close": value_at_close,
         "Profit/Loss": value_at_close - investment
     }
@@ -147,6 +160,7 @@ def main():
         gclient = get_gsheet_client()
         sheet = gclient.open_by_key(GOOGLE_SHEET_URL)
         worksheet = sheet.sheet1
+        closing_price = get_closing_price()
 
         # Get current portfolio state and existing order IDs
         holding, investment = get_portfolio_state(worksheet)
@@ -156,13 +170,12 @@ def main():
         # Process orders
         orders = fetch_orders(dhan)
         new_rows, holding, investment, has_today_order = process_orders(
-            orders, existing_ids, holding, investment
+            orders, existing_ids, holding, investment, closing_price
         )
 
         # Add blank row if no orders today and it's a weekday
         today = datetime.now()
         if not has_today_order and today.weekday() < 5:  # Mon-Fri
-            closing_price = get_closing_price(dhan)
             new_rows.append(create_blank_row(holding, investment, closing_price))
             logging.info("Added blank row with portfolio update")
 
