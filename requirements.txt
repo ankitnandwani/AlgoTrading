@@ -1,4 +1,9 @@
-streamlit
+streamlit~=1.47.1
 upstox-python-sdk
-niftystocks
-pandas
+niftystocks~=0.1.2
+pandas~=2.3.1
+gspread~=6.2.1
+yf~=0.0.5
+dhanhq~=2.0.2
+protobuf~=6.31.1
+yfinance~=0.2.65
