@@ -1,11 +1,8 @@
-from niftystocks import ns
-import datetime
-import pandas as pd
 import upstox_client
 from upstox_client.rest import ApiException
-import json
 from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
+from nsepython import *
 
 st.set_page_config(page_title="Nifty Shop", layout="centered")
 
@@ -181,7 +178,10 @@ run = st.button("🚀 Run Analysis and buy")
 
 if run:
     try:
-        nifty50_list = ns.get_nifty50()
+        nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
+        nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
+        nifty50_list = [symbol for symbol in nifty50_list if symbol != 'NIFTY 50']
+        st.info("nifty50_list : " + str(nifty50_list))
 
         config = upstox_client.Configuration()
         config.access_token = access_token
