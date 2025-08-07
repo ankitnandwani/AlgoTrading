@@ -135,25 +135,42 @@ def get_current_portfolio(top5stocks):
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def averaging(top5stocks):
+def averaging():
     portfolio = portfolio_api.get_holdings(api_version)
+    st.info("portfolio : " + str(portfolio))
+
     worst_deviation = None
     stock_to_average = None
-    for _, row in top5stocks.iterrows():
-        match = next((item for item in portfolio.data if item.instrument_token == row['Instrument_token']), None)
-        if match:
-            avg_buy_price = match.average_price
-            current_price = row['LTP']  # Already calculated in top5
-            if avg_buy_price > 0:  # Prevent division by zero
-                deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
-                print(row['Symbol'] + " has deviation = " + str(deviation))
-                if worst_deviation is None or deviation < worst_deviation:
-                    worst_deviation = deviation
-                    stock_to_average = row
 
-    if stock_to_average and worst_deviation < 3.14:
-        buy(stock_to_average['Instrument_token'], stock_to_average['LTP'])
-        st.success(f"Averaged: {stock_to_average['Symbol']} @ Deviation {worst_deviation:.2f}%")
+    for item in portfolio.data:
+        instrument_token = item.instrument_token
+        avg_buy_price = item.average_price
+
+        # Skip if quantity is 0 or avg price is 0
+        if item.quantity == 0 or avg_buy_price == 0:
+            continue
+
+        try:
+            # Fetch the current LTP from market API
+            current_price = get_ltp(item.instrument_token, item.tradingsymbol)
+        except Exception as e:
+            st.warning(f"Failed to fetch LTP for {item.trading_symbol}: {e}")
+            continue
+
+        deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
+        st.info(item.trading_symbol + " has deviation = " + str(deviation))
+
+        if worst_deviation is None or deviation < worst_deviation:
+            worst_deviation = deviation
+            stock_to_average = {
+                'instrument_token': instrument_token,
+                'ltp': current_price,
+                'symbol': item.trading_symbol
+            }
+
+    if stock_to_average and worst_deviation < -3.14:
+        buy(stock_to_average['instrument_token'], stock_to_average['ltp'])
+        st.success(f"Averaged: {stock_to_average['symbol']} @ Deviation {worst_deviation:.2f}%")
     else:
         st.info("No eligible stock found in portfolio for averaging.")
 
@@ -194,7 +211,7 @@ if run:
             st.subheader("📈 Top 5 Nifty Stocks Below MA20")
             st.dataframe(top5)
             get_current_portfolio(top5)
-            averaging(top5)
+            averaging()
         else:
             st.info("No qualifying stocks found.")
 
