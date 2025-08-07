@@ -137,7 +137,6 @@ def get_current_portfolio(top5stocks):
 # so we will average our worst performer from the list with cmp
 def averaging():
     portfolio = portfolio_api.get_holdings(api_version)
-    st.info("portfolio : " + str(portfolio))
 
     worst_deviation = None
     stock_to_average = None
