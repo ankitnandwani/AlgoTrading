@@ -102,7 +102,7 @@ def process_orders(orders, existing_ids, holding, investment, closing_price):
 
         # Parse order details
         order_date = datetime.strptime(
-            order['exchangeTime'], "%Y-%m-%dT%H:%M:%S"
+            order['exchangeTime'], "%Y-%m-%d %H:%M:%S"
         ).date()
         qty = order.get("quantity", 0)
         price = order.get("averageTradedPrice") or order.get("averagePrice") or 0.0
@@ -122,7 +122,7 @@ def process_orders(orders, existing_ids, holding, investment, closing_price):
             "Exchange Time": order['exchangeTime'],
             "Transaction Type": order['transactionType'],
             "Order Status": order['orderStatus'],
-            "close": closing_price,
+            "Close": closing_price,
             "Average Price": price,
             "Quantity": qty,
             "Total Holding": holding,
