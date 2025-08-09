@@ -18,7 +18,7 @@ def get_last_n_closes(instrument_key, n=20, days_buffer=60):
                                                    to_date=to_date, from_date=from_date)
     candles = resp.data.candles
     closes = [candle[4] for candle in candles]  # 4th index is 'close'
-    return closes[-n:] if len(closes) >= n else []
+    return closes[:n] if len(closes) >= n else []
 
 
 # 🛠 Helper: Get live LTP
@@ -128,7 +128,7 @@ def get_current_portfolio(top5stocks):
         elif token in executed_order_tokens:
             st.info(f"Order already placed for: {symbol}")
         else:
-            st.info(f"Buying new stock: {row['Symbol']}")
+            st.info(f"Buying new ETF: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
             st.stop()
 
