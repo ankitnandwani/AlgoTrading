@@ -28,7 +28,7 @@ def get_ltp(instrument_key, sym):
 
 
 # symbol to instrument key mapping
-def load_symbol_to_instrument_key_map(json_file="NSE.json"):
+def load_symbol_to_instrument_key_map(json_file="complete.json"):
     with open(json_file, 'r') as f:
         instruments = json.load(f)
 
@@ -49,7 +49,7 @@ def load_symbol_to_instrument_key_map(json_file="NSE.json"):
 # ✅ Main computation
 def compute_top5_nifty_below_ma():
     results = []
-    symbol_to_key = load_symbol_to_instrument_key_map("NSE.json")
+    symbol_to_key = load_symbol_to_instrument_key_map("complete.json")
 
     for sym in nifty50_list:
         try:
