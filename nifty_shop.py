@@ -11,7 +11,7 @@ st.set_page_config(page_title="Nifty Shop", layout="centered")
 
 
 # 🛠 Helper: Get historical closes
-def get_last_n_closes(instrument_key, n=19, days_buffer=30):
+def get_last_n_closes(instrument_key, n=20, days_buffer=50):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
@@ -58,7 +58,7 @@ def compute_top5_nifty_below_ma():
                 continue
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-            if len(closes) < 19:
+            if len(closes) < 20:
                 continue
 
             ma20 = (sum(closes)) / 20
