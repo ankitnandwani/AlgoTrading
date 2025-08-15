@@ -15,6 +15,8 @@ st.set_page_config(page_title="Nifty Shop", layout="centered")
 # 🛠 Helper: Get historical closes
 def get_rsi(ticker):
     st.info("ticker : " + ticker)
+    hist_data = ticker.history(period="5d")
+    st.info("hist_data : " + hist_data)
     data = yf.download(tickers=ticker, period='5d', interval='5m')
     st.info("data : " + data)
     closeValues = data['Close']
