@@ -73,7 +73,7 @@ def compute_top5_nifty_below_ma():
                 continue
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-            get_rsi(sym+".NS")
+            get_rsi("NIFTYBEES"+".NS")
 
             if len(closes) < 20:
                 continue
