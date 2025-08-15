@@ -13,8 +13,9 @@ st.set_page_config(page_title="Nifty Shop", layout="centered")
 
 
 # 🛠 Helper: Get historical closes
-def get_rsi(ticker):
-    st.info("ticker : " + ticker)
+def get_rsi(sym):
+    ticker = yf.Ticker(f"{sym}.NS")
+    st.info("ticker : " + str(ticker))
     hist_data = ticker.history(period="5d")
     st.info("hist_data : " + hist_data)
     data = yf.download(tickers=ticker, period='5d', interval='5m')
@@ -73,7 +74,7 @@ def compute_top5_nifty_below_ma():
                 continue
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-            get_rsi("NIFTYBEES"+".NS")
+            get_rsi("NIFTYBEES")
 
             if len(closes) < 20:
                 continue
