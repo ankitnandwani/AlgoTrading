@@ -6,8 +6,19 @@ from upstox_client.rest import ApiException
 import json
 from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
+from ta.momentum import RSIIndicator
+import yfinance as yf
 
 st.set_page_config(page_title="Nifty Shop", layout="centered")
+
+
+# 🛠 Helper: Get historical closes
+def get_rsi(ticker):
+    data = yf.download(tickers=ticker, period='5d', interval='5m')
+    closeValues = data['Close']
+    rsi_14 = RSIIndicator(close=closeValues, window=14)
+    rsiSeries = rsi_14.rsi()
+    print(rsiSeries.tail(10))
 
 
 # 🛠 Helper: Get historical closes
@@ -58,6 +69,8 @@ def compute_top5_nifty_below_ma():
                 continue
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
+            get_rsi(sym)
+
             if len(closes) < 20:
                 continue
 
