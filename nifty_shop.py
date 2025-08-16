@@ -1,4 +1,6 @@
 import datetime
+import math
+
 import pandas as pd
 import upstox_client
 from nsepython import nsefetch
@@ -6,30 +8,23 @@ from upstox_client.rest import ApiException
 import json
 from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
-from ta.momentum import RSIIndicator, StochRSIIndicator
-import yfinance as yf
+from ta.momentum import RSIIndicator
 
-st.set_page_config(page_title="Nifty Shop", layout="centered")
+st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
 
-
-# 🛠 Helper: Get historical closes
-def get_rsi(sym):
-    ticker = yf.Ticker(f"{sym}.NS")
-    st.info("ticker : " + str(ticker))
-    hist_data = ticker.history(period="90d")
-    closeValues = hist_data['Close']
-    rsi_14 = RSIIndicator(close=closeValues, window=14)
+def get_rsiUpstox(closes):
+    closes_series = pd.Series(closes[::-1])
+    rsi_14 = RSIIndicator(close=closes_series, window=14)
     rsiSeries = rsi_14.rsi()
     value = rsiSeries.tail(1).iloc[0]
-    st.info("rsi : " + str(value))
-
+    return value
 
 # 🛠 Helper: Get historical closes
-def get_last_n_closes(instrument_key, n=20, days_buffer=50):
+def get_last_n_closes(instrument_key, n=99, days_buffer=200):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
-                                                   to_date=to_date, from_date=from_date)
+                                                     to_date=to_date, from_date=from_date)
     candles = resp.data.candles
     closes = [candle[4] for candle in candles]  # 4th index is 'close'
     return closes[:n] if len(closes) >= n else []
@@ -71,23 +66,18 @@ def compute_top5_nifty_below_ma():
             if not instrument_key:
                 continue
 
-            get_rsi(sym)
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-
-            if len(closes) < 20:
-                continue
-
-            ma20 = (sum(closes)) / 20
-            dev = ((ltp - ma20) / ma20) * 100
-            if ltp < ma20:
-                results.append((sym, ltp, ma20, dev, instrument_key))
+            rsi = get_rsiUpstox(closes)
+            if rsi < 35:
+                results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
 
-    df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
-    df = df[df["Deviation%"] < 0].sort_values("Deviation%")
-    return df.head(5)
+    df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
+    df = df[df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
+    df.index = df.index+1
+    return df
 
 
 def buy(instrument_key, ltp):
@@ -105,18 +95,23 @@ def buy(instrument_key, ltp):
         price = ltp
         is_amo = True
 
+    min_investment = 5000
+    quantity = max(1, math.ceil(min_investment / ltp))
+
     # Display order details
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
             **Order Type:** `{order_type}`  
+            **quantity:** `{quantity}`  
+            **Order Value:** `₹{quantity * ltp}`  
             **Price:** `₹{price}`  
             **AMO:** `{is_amo}`
             """)
 
     try:
-        body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
+        body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
                                                  price=price, tag="nifty_shop", instrument_token=instrument_key,
                                                  order_type=order_type, transaction_type="BUY",
                                                  disclosed_quantity=0,
@@ -149,6 +144,23 @@ def get_current_portfolio(top5stocks):
             buy(row['Instrument_token'], row['LTP'])
             st.stop()
 
+def getOrderHistory():
+    today = datetime.now(UTC).date()
+    one_year_ago = today - timedelta(days=365)
+
+    start_date = one_year_ago.strftime("%Y-%m-%d")
+    end_date = today.strftime("%Y-%m-%d")
+    param = {
+        'segment': "EQ"
+    }
+
+    try:
+        api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
+        st.info("api_response : " + str(api_response))
+    except ApiException as e:
+        st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
+
+
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
@@ -159,6 +171,9 @@ def averaging():
     stock_to_average = None
 
     for item in portfolio.data:
+        if item.tradingsymbol not in nifty50_list:
+            continue
+
         instrument_token = item.instrument_token
         avg_buy_price = item.average_price
 
@@ -192,7 +207,7 @@ def averaging():
 
 
 # 🔐 UI Components
-st.title("📊 Nifty Shop")
+st.title("📊 Nifty Shop RSI")
 access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
 run = st.button("🚀 Run Analysis and buy")
 
@@ -211,6 +226,7 @@ if run:
         history_api = upstox_client.HistoryV3Api(api_client)
         quote_api = upstox_client.MarketQuoteV3Api(api_client)
         portfolio_api = upstox_client.PortfolioApi(api_client)
+        post_trade_api = upstox_client.PostTradeApi(api_client)
         order_api = upstox_client.OrderApiV3(api_client)
         order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
@@ -227,9 +243,10 @@ if run:
 
         top5 = compute_top5_nifty_below_ma()
         if not top5.empty:
-            st.subheader("📈 Top 5 Nifty Stocks Below MA20")
+            st.subheader("📈 Stocks Below 35 RSI")
             st.dataframe(top5)
             get_current_portfolio(top5)
+            getOrderHistory()
             averaging()
         else:
             st.info("No qualifying stocks found.")
