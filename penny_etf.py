@@ -1,4 +1,6 @@
 import datetime
+import math
+
 import pandas as pd
 import upstox_client
 from nsepython import nsefetch
@@ -88,19 +90,24 @@ def buy(instrument_key, ltp):
         price = ltp
         is_amo = True
 
+    min_investment = 10000
+    quantity = max(1, math.ceil(min_investment / ltp))
+
     # Display order details
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
-            **Order Type:** `{order_type}`  
+            **Order Type:** `{order_type}`
+            **Quantity:** `{quantity}`  
+            **Order Value:** `₹{quantity * ltp}`  
             **Price:** `₹{price}`  
             **AMO:** `{is_amo}`
             """)
 
     try:
-        body = upstox_client.PlaceOrderV3Request(quantity=1, product="D", validity="DAY",
-                                                 price=price, tag="nifty_shop", instrument_token=instrument_key,
+        body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
+                                                 price=price, tag="penny_etf", instrument_token=instrument_key,
                                                  order_type=order_type, transaction_type="BUY",
                                                  disclosed_quantity=0,
                                                  trigger_price=0.0, is_amo=is_amo, slice=True)
@@ -132,21 +139,57 @@ def get_current_portfolio(top5stocks):
             buy(row['Instrument_token'], row['LTP'])
             st.stop()
 
+def getOrderHistory():
+    today = datetime.now(UTC).date()
+    one_year_ago = today - timedelta(days=365)
+
+    start_date = one_year_ago.strftime("%Y-%m-%d")
+    end_date = today.strftime("%Y-%m-%d")
+    param = {
+        'segment': "EQ"
+    }
+
+    order_summary = {}
+
+    try:
+        api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
+        orders = getattr(api_response, "data", []) or []
+        buy_orders = [o for o in orders if o.transaction_type == "BUY"]
+        for order in buy_orders:
+            symbol = order.symbol
+            if symbol not in nifty50_list:
+                continue
+            if symbol not in order_summary:
+                order_summary[symbol] = {
+                    "last_buy_price": float(order.price),
+                    "buy_count": 1
+                }
+            else:
+                order_summary[symbol]["buy_count"] += 1
+
+    except ApiException as e:
+        st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
+
+    return order_summary
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def averaging():
     portfolio = portfolio_api.get_holdings(api_version)
+    order_summary = getOrderHistory()
 
-    worst_deviation = None
-    stock_to_average = None
+    candidates = []
 
     for item in portfolio.data:
-        instrument_token = item.instrument_token
-        avg_buy_price = item.average_price
+        if item.tradingsymbol not in nifty50_list:
+            continue
+
+        info = order_summary.get(item.tradingsymbol)
+        last_buy_price = float(info.get("last_buy_price", 0) or 0)
+        order_count = info.get("buy_count", 0)
 
         # Skip if quantity is 0 or avg price is 0
-        if item.quantity == 0 or avg_buy_price == 0:
+        if item.quantity == 0 or not last_buy_price:
             continue
 
         try:
@@ -156,22 +199,26 @@ def averaging():
             st.warning(f"Failed to fetch LTP for {item.trading_symbol}: {e}")
             continue
 
-        deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
-        st.info(item.trading_symbol + " has deviation = " + str(deviation))
+        deviation = ((current_price - last_buy_price) / last_buy_price) * 100
+        st.info(
+            item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
 
-        if worst_deviation is None or deviation < worst_deviation:
-            worst_deviation = deviation
-            stock_to_average = {
-                'instrument_token': instrument_token,
-                'ltp': current_price,
-                'symbol': item.trading_symbol
-            }
+        if deviation < -3.14:
+            candidates.append({
+                "instrument_token": item.instrument_token,
+                "ltp": current_price,
+                "symbol": item.trading_symbol,
+                "deviation": deviation,
+                "order_count": order_count
+            })
 
-    if stock_to_average and worst_deviation < -3.14:
-        buy(stock_to_average['instrument_token'], stock_to_average['ltp'])
-        st.success(f"Averaged: {stock_to_average['symbol']} @ Deviation {worst_deviation:.2f}%")
-    else:
+    if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
+        return
+
+    best_candidate = min(candidates, key=lambda x: x["deviation"])
+    buy(best_candidate['instrument_token'], best_candidate['ltp'])
+    st.success(f"Averaged: {best_candidate['symbol']} @ Deviation {best_candidate['deviation']:.2f}%")
 
 
 # 🔐 UI Components
@@ -192,6 +239,7 @@ if run:
         history_api = upstox_client.HistoryV3Api(api_client)
         quote_api = upstox_client.MarketQuoteV3Api(api_client)
         portfolio_api = upstox_client.PortfolioApi(api_client)
+        post_trade_api = upstox_client.PostTradeApi(api_client)
         order_api = upstox_client.OrderApiV3(api_client)
         order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
