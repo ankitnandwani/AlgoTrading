@@ -95,7 +95,7 @@ def buy(instrument_key, ltp):
         price = ltp
         is_amo = True
 
-    min_investment = 5000
+    min_investment = 10000
     quantity = max(1, math.ceil(min_investment / ltp))
 
     # Display order details
