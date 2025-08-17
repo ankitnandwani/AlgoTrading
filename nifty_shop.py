@@ -69,15 +69,15 @@ def compute_top5_nifty_below_ma():
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
             rsi = get_rsiUpstox(closes)
-            if rsi < 35:
-                results.append((sym, ltp, rsi, instrument_key))
+            results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
 
-    df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
-    df = df[df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
-    df.index = df.index+1
-    return df
+    all_df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
+    below35_df = all_df[all_df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
+    below35_df.index = below35_df.index + 1  # start index from 1 for display
+
+    return all_df, below35_df
 
 
 def buy(instrument_key, ltp):
@@ -185,8 +185,6 @@ def averaging():
     order_summary = getOrderHistory()
 
     candidates = []
-    worst_deviation = None
-    stock_to_average = None
 
     for item in portfolio.data:
         if item.tradingsymbol not in nifty50_list:
@@ -228,12 +226,13 @@ def averaging():
 
     for stock in candidates:
         order_count = stock["order_count"]
-        if ((order_count == 1 and top5["RSI"]<30) or
-            (order_count == 2 and top5["RSI"]<25) or
-            (order_count == 3 and top5["RSI"]<20) or
-            (order_count == 4 and top5["RSI"]<15) or
-            (order_count == 5 and top5["RSI"]<10) or
-            (order_count == 6 and top5["RSI"]<5)):
+        rsi = rsi_map.get(stock["symbol"])
+        if ((order_count == 1 and rsi<30) or
+            (order_count == 2 and rsi<25) or
+            (order_count == 3 and rsi<20) or
+            (order_count == 4 and rsi<15) or
+            (order_count == 5 and rsi<10) or
+            (order_count == 6 and rsi<5)):
             buy(stock['instrument_token'], stock['ltp'])
             st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
             return
@@ -276,16 +275,18 @@ if run:
             "api_version": api_version,
         })
 
-        top5 = compute_top5_nifty_below_ma()
-        if not top5.empty:
+        all_rsi, rsi_below35 = compute_top5_nifty_below_ma()
+        rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
+
+        if not rsi_below35.empty:
             st.subheader("📈 Stocks Below 35 RSI")
-            st.dataframe(top5)
-            get_current_portfolio(top5)
+            st.dataframe(rsi_below35)
+            get_current_portfolio(rsi_below35)
         else:
             st.info("No qualifying stocks found.")
 
         getOrderHistory()
-        averaging(top5)
+        averaging()
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
