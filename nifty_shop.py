@@ -154,19 +154,37 @@ def getOrderHistory():
         'segment': "EQ"
     }
 
+    order_summary = {}
+
     try:
         api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
-        st.info("api_response : " + str(api_response))
+        orders = getattr(api_response, "data", []) or []
+        buy_orders = [o for o in orders if o.transaction_type == "BUY"]
+        for order in buy_orders:
+            symbol = order.symbol
+            if symbol not in nifty50_list:
+                continue
+            if symbol not in order_summary:
+                order_summary[symbol] = {
+                    "last_buy_price": float(order.price),
+                    "buy_count": 1
+                }
+            else:
+                order_summary[symbol]["buy_count"] += 1
+
     except ApiException as e:
         st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
 
+    return order_summary
 
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def averaging():
     portfolio = portfolio_api.get_holdings(api_version)
+    order_summary = getOrderHistory()
 
+    candidates = []
     worst_deviation = None
     stock_to_average = None
 
@@ -174,11 +192,13 @@ def averaging():
         if item.tradingsymbol not in nifty50_list:
             continue
 
-        instrument_token = item.instrument_token
-        avg_buy_price = item.average_price
+        info = order_summary.get(item.tradingsymbol)
+        last_buy_price = float(info.get("last_buy_price", 0) or 0)
+        order_count = info.get("buy_count", 0)
+        st.info("order_count : " + str(order_count))
 
         # Skip if quantity is 0 or avg price is 0
-        if item.quantity == 0 or avg_buy_price == 0:
+        if item.quantity == 0 or not last_buy_price:
             continue
 
         try:
@@ -188,22 +208,37 @@ def averaging():
             st.warning(f"Failed to fetch LTP for {item.trading_symbol}: {e}")
             continue
 
-        deviation = ((current_price - avg_buy_price) / avg_buy_price) * 100
-        st.info(item.trading_symbol + " has deviation = " + str(deviation))
+        deviation = ((current_price - last_buy_price) / last_buy_price) * 100
+        st.info(item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
 
-        if worst_deviation is None or deviation < worst_deviation:
-            worst_deviation = deviation
-            stock_to_average = {
-                'instrument_token': instrument_token,
-                'ltp': current_price,
-                'symbol': item.trading_symbol
-            }
+        if deviation < -3.14:
+            candidates.append({
+                "instrument_token": item.instrument_token,
+                "ltp": current_price,
+                "symbol": item.trading_symbol,
+                "deviation": deviation,
+                "order_count": order_count
+            })
 
-    if stock_to_average and worst_deviation < -3.14:
-        buy(stock_to_average['instrument_token'], stock_to_average['ltp'])
-        st.success(f"Averaged: {stock_to_average['symbol']} @ Deviation {worst_deviation:.2f}%")
-    else:
+    if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
+        return
+
+    candidates.sort(key=lambda x: x["deviation"], reverse=True)
+
+    for stock in candidates:
+        order_count = stock["order_count"]
+        if ((order_count == 1 and top5["RSI"]<30) or
+            (order_count == 2 and top5["RSI"]<25) or
+            (order_count == 3 and top5["RSI"]<20) or
+            (order_count == 4 and top5["RSI"]<15) or
+            (order_count == 5 and top5["RSI"]<10) or
+            (order_count == 6 and top5["RSI"]<5)):
+            buy(stock['instrument_token'], stock['ltp'])
+            st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
+            return
+    else:
+        st.info("No stock met RSI rules for averaging.")
 
 
 # 🔐 UI Components
@@ -246,10 +281,11 @@ if run:
             st.subheader("📈 Stocks Below 35 RSI")
             st.dataframe(top5)
             get_current_portfolio(top5)
-            getOrderHistory()
-            averaging()
         else:
             st.info("No qualifying stocks found.")
+
+        getOrderHistory()
+        averaging(top5)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
