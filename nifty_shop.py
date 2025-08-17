@@ -104,7 +104,7 @@ def buy(instrument_key, ltp):
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
             **Order Type:** `{order_type}`  
-            **quantity:** `{quantity}`  
+            **Quantity:** `{quantity}`  
             **Order Value:** `₹{quantity * ltp}`  
             **Price:** `₹{price}`  
             **AMO:** `{is_amo}`
@@ -221,7 +221,7 @@ def averaging():
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
-    candidates.sort(key=lambda x: x["deviation"], reverse=True)
+    candidates.sort(key=lambda x: x["deviation"])
 
     for stock in candidates:
         order_count = stock["order_count"]
