@@ -193,7 +193,6 @@ def averaging():
         info = order_summary.get(item.tradingsymbol)
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
         order_count = info.get("buy_count", 0)
-        st.info("order_count : " + str(order_count))
 
         # Skip if quantity is 0 or avg price is 0
         if item.quantity == 0 or not last_buy_price:
@@ -250,7 +249,11 @@ if run:
         nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
         nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
         nifty50_list = [symbol for symbol in nifty50_list if symbol != 'NIFTY 50']
-        st.info("nifty50_list : " + str(nifty50_list))
+        nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
+        nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
+        nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol != 'NIFTY NEXT 50']
+        nifty50_list = nifty50_list + nifty_next50_list
+        st.info("nifty100_list : " + str(nifty50_list))
 
         config = upstox_client.Configuration()
         config.access_token = access_token
