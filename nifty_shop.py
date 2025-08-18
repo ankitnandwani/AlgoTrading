@@ -23,7 +23,6 @@ def get_rsiUpstox(closes):
 def get_last_n_closes(instrument_key, n=99, days_buffer=200):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
-    st.info("instrument_key : " + str(instrument_key) + " to_date : " + str(to_date) + " from_date : " + str(from_date))
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
                                                      to_date=to_date, from_date=from_date)
     candles = resp.data.candles
@@ -69,7 +68,6 @@ def compute_top5_nifty_below_ma():
 
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-            st.info("symbol : " + str(sym) + " closes : " + str(closes))
             rsi = get_rsiUpstox(closes)
             results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
@@ -83,7 +81,6 @@ def compute_top5_nifty_below_ma():
 
 
 def buy(instrument_key, ltp):
-    st.info("trigggeringgg buyyyy : ")
     # Get current IST time
     now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
     market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
