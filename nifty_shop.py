@@ -17,6 +17,7 @@ def get_rsiUpstox(closes):
     rsi_14 = RSIIndicator(close=closes_series, window=14)
     rsiSeries = rsi_14.rsi()
     value = rsiSeries.tail(1).iloc[0]
+    st.info("value : " + value)
     return value
 
 # 🛠 Helper: Get historical closes
@@ -81,6 +82,7 @@ def compute_top5_nifty_below_ma():
 
 
 def buy(instrument_key, ltp):
+    st.info("trigggeringgg buyyyy : ")
     # Get current IST time
     now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
     market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
@@ -154,7 +156,8 @@ def sell(instrument_key, ltp):
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
             **Order Type:** `{order_type}`  
-            **Price:** `₹{price}`  
+            **Price:** `₹{price}`
+            **Quantity:** `₹{quantity}`
             **AMO:** `{is_amo}`
             """)
 
