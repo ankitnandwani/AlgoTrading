@@ -17,7 +17,9 @@ def get_rsiUpstox(closes):
     rsi_14 = RSIIndicator(close=closes_series, window=14)
     rsiSeries = rsi_14.rsi()
     value = rsiSeries.tail(1).iloc[0]
-    st.info("value : " + value)
+    st.info("value : " + str(value))
+    valuebackup = rsiSeries.tail(0).iloc[0]
+    st.info("valuebackup : " + str(valuebackup))
     return value
 
 # 🛠 Helper: Get historical closes
