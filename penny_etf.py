@@ -71,7 +71,7 @@ def compute_top2_nifty_below_ma():
             st.warning(f"{sym} error: {e}")
 
     df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
-    df = df[df["Deviation%"] < 0].sort_values("Deviation%")
+    df = df.sort_values("Deviation%")
     return df.head(2)
 
 
@@ -117,8 +117,57 @@ def buy(instrument_key, ltp):
         st.error(f"❌ Failed to place order: {e}")
 
 
+def sell(instrument_key, ltp):
+    # Get current IST time
+    now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
+    market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
+
+    # Determine order type and AMO status based on current time
+    if now_ist < market_close_time:
+        order_type = "MARKET"
+        price = 0.0
+        is_amo = False
+    else:
+        order_type = "LIMIT"
+        price = ltp
+        is_amo = True
+
+    quantity=0
+    for item in portfolio.data:
+        if item.tradingsymbol not in nifty50_list:
+            continue
+
+        if item.instrument_token == instrument_key:
+            quantity = item.quantity
+            break
+
+
+    # Display order details
+    st.subheader("🛒 Sell Order details")
+    st.markdown(f"""
+            **Instrument Token:** `{instrument_key}`  
+            **LTP:** `₹{ltp}`  
+            **Order Type:** `{order_type}`  
+            **Price:** `₹{price}`
+            **Quantity:** `₹{quantity}`
+            **Order Value:** `₹{quantity * ltp}`
+            **AMO:** `{is_amo}`
+            """)
+
+    try:
+        body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
+                                                 price=price, tag="penny_etf", instrument_token=instrument_key,
+                                                 order_type=order_type, transaction_type="SELL",
+                                                 disclosed_quantity=0,
+                                                 trigger_price=0.0, is_amo=is_amo, slice=True)
+        api_response = order_api.place_order(body)
+        st.success(f"✅ Sell order placed successfully: {api_response}")
+    except ApiException as e:
+        st.error(f"❌ Failed to place order: {e}")
+
+
+
 def get_current_portfolio(top5stocks):
-    portfolio = portfolio_api.get_holdings(api_version)
     existing_holdings = {item.instrument_token for item in portfolio.data}
     existing_orders = order_apiv1.get_order_book(api_version=api_version)
     executed_order_tokens = {
@@ -175,7 +224,6 @@ def getOrderHistory():
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def averaging():
-    portfolio = portfolio_api.get_holdings(api_version)
     order_summary = getOrderHistory()
 
     candidates = []
@@ -212,6 +260,9 @@ def averaging():
                 "order_count": order_count
             })
 
+        if deviation > 6.28:
+            sell(item.instrument_token, current_price)
+
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
         return
@@ -243,6 +294,7 @@ if run:
         order_api = upstox_client.OrderApiV3(api_client)
         order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
+        portfolio = portfolio_api.get_holdings(api_version)
 
         # Global injection for helper functions
         globals().update({
