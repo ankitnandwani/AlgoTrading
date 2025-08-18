@@ -23,6 +23,7 @@ def get_rsiUpstox(closes):
 def get_last_n_closes(instrument_key, n=99, days_buffer=200):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
+    st.info("instrument_key : " + str(instrument_key) + " to_date : " + str(to_date) + " from_date : " + str(from_date))
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
                                                      to_date=to_date, from_date=from_date)
     candles = resp.data.candles
