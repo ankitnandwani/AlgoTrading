@@ -17,9 +17,6 @@ def get_rsiUpstox(closes):
     rsi_14 = RSIIndicator(close=closes_series, window=14)
     rsiSeries = rsi_14.rsi()
     value = rsiSeries.tail(1).iloc[0]
-    st.info("value : " + str(value))
-    valuebackup = rsiSeries.tail(0).iloc[0]
-    st.info("valuebackup : " + str(valuebackup))
     return value
 
 # 🛠 Helper: Get historical closes
@@ -72,6 +69,7 @@ def compute_top5_nifty_below_ma():
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
             rsi = get_rsiUpstox(closes)
+            st.info("symbol : " + str(sym) + " value : " + str(rsi))
             results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
