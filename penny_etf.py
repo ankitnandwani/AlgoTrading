@@ -65,8 +65,7 @@ def compute_top2_nifty_below_ma():
 
             ma20 = (sum(closes)) / 20
             dev = ((ltp - ma20) / ma20) * 100
-            if ltp < ma20:
-                results.append((sym, ltp, ma20, dev, instrument_key))
+            results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
 
