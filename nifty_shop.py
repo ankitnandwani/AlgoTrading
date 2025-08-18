@@ -68,8 +68,8 @@ def compute_top5_nifty_below_ma():
 
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
+            st.info("symbol : " + str(sym) + " closes : " + str(closes))
             rsi = get_rsiUpstox(closes)
-            st.info("symbol : " + str(sym) + " value : " + str(rsi))
             results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
