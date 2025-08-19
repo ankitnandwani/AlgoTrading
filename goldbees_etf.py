@@ -43,9 +43,15 @@ auth_token = query_params.get("auth", [None])[0]
 # If `auth` found, save and clear URL params to stop redirect loop
 if auth_token and not st.session_state.access_token:
     st.session_state.access_token = auth_token
-    # Clear query params (reload without ?auth=xxx)
-    st.experimental_set_query_params()
-    st.rerun()
+    # 🔑 Use JS to reload without query params (avoids redirect loop)
+    st.markdown(
+        """
+        <script>
+        window.location.href = window.location.origin + window.location.pathname;
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
 
 if not st.session_state.access_token:
     # Show login button if user not authenticated
@@ -60,10 +66,11 @@ else:
     st.success("✅ Successfully logged in with Rupeezy")
     st.write(f"Access Token: {st.session_state.access_token}")
 
-try:
-    client = VortexAPI(API_KEY, APPLICATION_ID)
-    client.exchange_token(st.session_state.access_token)
-    orders = client.orders(limit=20, offset=1)
-    st.info("orders : " + str(orders))
-except Exception as e:
-    st.error(f"Something went wrong: {e}")
+    if st.button("🚀 Run Analysis and Trade"):
+        try:
+            client = VortexAPI(API_KEY, APPLICATION_ID)
+            client.exchange_token(st.session_state.access_token)
+            orders = client.orders(limit=20, offset=1)
+            st.info("orders : " + str(orders))
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
