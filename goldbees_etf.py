@@ -30,13 +30,21 @@ st.title("📊 GOLDBEES ETF")
 
 API_KEY = "kdYNchen1BKmeQbK22ingVtEDmd2sph8jKcDNKzf"
 APPLICATION_ID = "dev_zeHSphjh"
-CALLBACK_URL = "https://goldbeesetf.streamlit.app"
+CALLBACK_URL = "https://goldbeesetf.streamlit.app/"
+
+# Initialize session state
+if "access_token" not in st.session_state:
+    st.session_state.access_token = None
 
 # Capture `auth` param from callback
 query_params = st.query_params
-access_token = query_params.get("auth", [None])[0]
+auth_token = query_params.get("auth", [None])[0]
 
-if not access_token:
+# If `auth` found in URL, save to session_state
+if auth_token:
+    st.session_state.access_token = auth_token
+
+if not st.session_state.access_token:
     # Show login button if user not authenticated
     login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}&cb_param=hi"
     st.markdown(
@@ -47,11 +55,11 @@ if not access_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.write(f"Access Token: {access_token}")
+    st.write(f"Access Token: {st.session_state.access_token}")
 
 try:
     client = VortexAPI(API_KEY, APPLICATION_ID)
-    client.exchange_token(access_token)
+    client.exchange_token(st.session_state.access_token)
     orders = client.orders(limit=20, offset=1)
     st.info("orders : " + str(orders))
 except Exception as e:
