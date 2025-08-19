@@ -40,9 +40,12 @@ if "access_token" not in st.session_state:
 query_params = st.query_params
 auth_token = query_params.get("auth", [None])[0]
 
-# If `auth` found in URL, save to session_state
-if auth_token:
+# If `auth` found, save and clear URL params to stop redirect loop
+if auth_token and not st.session_state.access_token:
     st.session_state.access_token = auth_token
+    # Clear query params (reload without ?auth=xxx)
+    st.experimental_set_query_params()
+    st.rerun()
 
 if not st.session_state.access_token:
     # Show login button if user not authenticated
