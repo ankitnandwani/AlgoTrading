@@ -38,7 +38,7 @@ access_token = query_params.get("auth", [None])[0]
 
 if not access_token:
     # Show login button if user not authenticated
-    login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}"
+    login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}&cb_param=hi"
     st.markdown(
         f'<a href="{login_url}" target="_self">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
