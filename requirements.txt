@@ -4,3 +4,4 @@ niftystocks~=0.1.2
 pandas~=2.3.1
 requests~=2.32.4
 nsepython~=2.97
+vortex_api
