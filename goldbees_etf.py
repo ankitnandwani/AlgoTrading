@@ -44,7 +44,7 @@ auth_token = query_params.get("auth")
 if auth_token and not st.session_state.access_token:
     st.session_state.access_token = auth_token
 
-if not st.session_state.access_token:
+if not auth_token:
     # Show login button if user not authenticated
     login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}&cb_param=hi"
     st.markdown(
