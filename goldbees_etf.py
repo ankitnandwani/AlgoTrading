@@ -45,15 +45,6 @@ st.info("auth_tokenz " + str(auth_token))
 # If `auth` found, save and clear URL params to stop redirect loop
 if auth_token and not st.session_state.access_token:
     st.session_state.access_token = auth_token
-    # 🔑 Use JS to reload without query params (avoids redirect loop)
-    st.markdown(
-        """
-        <script>
-        window.location.href = window.location.origin + window.location.pathname;
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
 
 if not st.session_state.access_token:
     # Show login button if user not authenticated
@@ -66,7 +57,7 @@ if not st.session_state.access_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.write(f"Access Token: {st.session_state.access_token}")
+    st.write(f"Access Token kya bakchodi hai bc : {st.session_state.access_token}")
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
