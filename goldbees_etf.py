@@ -38,9 +38,9 @@ if "access_token" not in st.session_state:
 
 # Capture `auth` param from callback
 query_params = st.query_params
-st.info("query_params " + str(query_params))
-auth_token = query_params.get("auth", [None])[0]
-st.info("auth_token " + str(auth_token))
+st.info("query_paramsz " + str(query_params))
+auth_token = query_params.get("auth")
+st.info("auth_tokenz " + str(auth_token))
 
 # If `auth` found, save and clear URL params to stop redirect loop
 if auth_token and not st.session_state.access_token:
