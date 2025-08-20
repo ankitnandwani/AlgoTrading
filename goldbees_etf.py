@@ -55,12 +55,13 @@ if not st.session_state.access_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.write(f"Access Token kya bakchodi hai bc : {st.session_state.access_token}")
+    st.write(f"Access Token : {st.session_state.access_token}")
+    st.write(f"Auth Token : {auth_token}")
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            client.exchange_token(st.session_state.access_token)
+            client.exchange_token(auth_token)
             orders = client.orders(limit=20, offset=1)
             st.info("orders : " + str(orders))
         except Exception as e:
