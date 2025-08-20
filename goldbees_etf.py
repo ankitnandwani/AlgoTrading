@@ -1,6 +1,8 @@
 import json
+from datetime import datetime
+
 import streamlit as st
-from vortex_api import VortexAPI
+from vortex_api import VortexAPI, Constants
 
 st.set_page_config(page_title="GOLDBEES ETF", layout="centered")
 
@@ -30,6 +32,7 @@ st.title("📊 GOLDBEES ETF")
 
 API_KEY = "kdYNchen1BKmeQbK22ingVtEDmd2sph8jKcDNKzf"
 APPLICATION_ID = "dev_zeHSphjh"
+ETF_TOKEN = 14428
 
 # Initialize session state
 if "access_token" not in st.session_state:
@@ -63,5 +66,9 @@ else:
             inst = client.download_master()
             st.info("inst : " + str(inst))
             st.info("orders : " + str(orders))
+            start = datetime(2025, 8, 21)  # start datetime
+            to = datetime(2025, 8, 21)  # end datetime
+            hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN, to=to, start=start, resolution=Constants.Resolutions.DAY)
+            st.info("hist : " + str(hist))
         except Exception as e:
             st.error(f"Something went wrong: {e}")
