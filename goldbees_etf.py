@@ -38,9 +38,7 @@ if "access_token" not in st.session_state:
 
 # Capture `auth` param from callback
 query_params = st.query_params
-st.info("query_paramsz " + str(query_params))
 auth_token = query_params.get("auth")
-st.info("auth_tokenz " + str(auth_token))
 
 # If `auth` found, save and clear URL params to stop redirect loop
 if auth_token and not st.session_state.access_token:
@@ -57,14 +55,12 @@ if not st.session_state.access_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.info("auth_token bc: " + str(auth_token))
-    st.info("st.session_state.access_token : " + str(st.session_state.access_token))
     st.write(f"Access Token kya bakchodi hai bc : {st.session_state.access_token}")
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            client.exchange_token(auth_token)
+            client.exchange_token(st.session_state.access_token)
             orders = client.orders(limit=20, offset=1)
             st.info("orders : " + str(orders))
         except Exception as e:
