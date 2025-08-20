@@ -30,7 +30,6 @@ st.title("📊 GOLDBEES ETF")
 
 API_KEY = "kdYNchen1BKmeQbK22ingVtEDmd2sph8jKcDNKzf"
 APPLICATION_ID = "dev_zeHSphjh"
-CALLBACK_URL = "https%3A%2F%2Fgoldbeesetf.streamlit.app"
 
 # Initialize session state
 if "access_token" not in st.session_state:
@@ -46,7 +45,6 @@ if auth_token and not st.session_state.access_token:
 
 if not auth_token:
     # Show login button if user not authenticated
-    st.info("no chanze")
     login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}"
     st.markdown(
         f'<a href="{login_url}" target="_blank">'
@@ -56,8 +54,6 @@ if not auth_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.write(f"Access Token : {st.session_state.access_token}")
-    st.write(f"Auth Token : {auth_token}")
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
