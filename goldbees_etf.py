@@ -30,7 +30,7 @@ st.title("📊 GOLDBEES ETF")
 
 API_KEY = "kdYNchen1BKmeQbK22ingVtEDmd2sph8jKcDNKzf"
 APPLICATION_ID = "dev_zeHSphjh"
-CALLBACK_URL = "https://goldbeesetf.streamlit.app/callback/"
+CALLBACK_URL = "https%3A%2F%2Fwww.goldbeesetf.streamlit.app%2Fcallback"
 
 # Initialize session state
 if "access_token" not in st.session_state:
