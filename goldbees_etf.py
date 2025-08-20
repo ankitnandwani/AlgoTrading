@@ -63,13 +63,10 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             client.exchange_token(st.session_state.access_token)
             orders = client.orders(limit=20, offset=1)
-            inst = client.download_master()
-            st.info("inst : " + str(inst))
-            st.info("orders : " + str(orders))
+
             start = datetime(2025, 8, 21)  # start datetime
             to = datetime(2025, 8, 21)  # end datetime
             hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN, to=to, start=start, resolution=Constants.Resolutions.DAY)
-            st.info("hist : " + str(hist))
             close_price = hist['c'][0]
             st.info("close_price : " + str(close_price))
         except Exception as e:
