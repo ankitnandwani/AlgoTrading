@@ -64,7 +64,7 @@ else:
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            client.exchange_token(st.session_state.access_token)
+            client.exchange_token(auth_token)
             orders = client.orders(limit=20, offset=1)
             st.info("orders : " + str(orders))
         except Exception as e:
