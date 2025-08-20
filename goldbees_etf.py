@@ -57,6 +57,8 @@ if not st.session_state.access_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
+    st.info("auth_token bc: " + str(auth_token))
+    st.info("st.session_state.access_token : " + str(st.session_state.access_token))
     st.write(f"Access Token kya bakchodi hai bc : {st.session_state.access_token}")
 
     if st.button("🚀 Run Analysis and Trade"):
