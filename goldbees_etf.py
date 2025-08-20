@@ -51,7 +51,8 @@ if not auth_token:
     st.markdown(
         f'<a href="{login_url}" target="_self">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
-        f'</a>'
+        f'</a>',
+        unsafe_allow_html = True
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
