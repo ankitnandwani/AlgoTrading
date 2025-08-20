@@ -46,7 +46,7 @@ if auth_token and not st.session_state.access_token:
 
 if not auth_token:
     # Show login button if user not authenticated
-    login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}&cb_param=hi"
+    login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}&callbackUrl={CALLBACK_URL}"
     st.markdown(
         f'<a href="{login_url}" target="_self">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
