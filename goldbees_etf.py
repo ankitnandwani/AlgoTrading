@@ -49,7 +49,7 @@ if not auth_token:
     st.info("no chanze")
     login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}"
     st.markdown(
-        f'<a href="{login_url}" target="_self">'
+        f'<a href="{login_url}" target="_blank">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
         f'</a>',
         unsafe_allow_html = True
