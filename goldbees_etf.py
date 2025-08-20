@@ -60,6 +60,8 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             client.exchange_token(st.session_state.access_token)
             orders = client.orders(limit=20, offset=1)
+            inst = client.download_master()
+            st.info("inst : " + str(inst))
             st.info("orders : " + str(orders))
         except Exception as e:
             st.error(f"Something went wrong: {e}")
