@@ -100,7 +100,8 @@ else:
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            client.exchange_token(st.session_state.access_token)
+            token = client.exchange_token(st.session_state.access_token)
+            st.info("token : " + str(token))
             orders = client.orders(limit=20, offset=1)
             buy_rate = get_buy_price()
             buy(buy_rate)
