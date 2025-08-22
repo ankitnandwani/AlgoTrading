@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
 
 import streamlit as st
 from vortex_api import VortexAPI, Constants
@@ -64,8 +64,8 @@ else:
             client.exchange_token(st.session_state.access_token)
             orders = client.orders(limit=20, offset=1)
 
-            start = datetime(2025, 8, 21)  # start datetime
-            to = datetime(2025, 8, 22)  # end datetime
+            start = datetime.now(UTC) - timedelta(days=1)
+            to = datetime.now(UTC)
             hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN, to=to, start=start, resolution=Constants.Resolutions.DAY)
             st.info("hist : " + str(hist))
             close_price = hist['c'][0]
