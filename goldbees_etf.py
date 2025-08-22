@@ -48,7 +48,7 @@ def buy(buy_price):
                         transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
                         variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER,
                         quantity=quantity, price=buy_price,trigger_price=0.0,
-                        disclosed_quantity= 0, validity=Constants.ValidityTypes.AFTER_MARKET)
+                        disclosed_quantity= 0, validity=Constants.ValidityTypes.FULL_DAY)
 
     st.success(f"✅ Buy order placed successfully: {api_response}")
 
