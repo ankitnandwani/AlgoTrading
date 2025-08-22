@@ -64,7 +64,7 @@ else:
             client.exchange_token(st.session_state.access_token)
             orders = client.orders(limit=20, offset=1)
 
-            start = datetime(2025, 8, 22)  # start datetime
+            start = datetime(2025, 8, 21)  # start datetime
             to = datetime(2025, 8, 22)  # end datetime
             hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN, to=to, start=start, resolution=Constants.Resolutions.DAY)
             st.info("hist : " + str(hist))
