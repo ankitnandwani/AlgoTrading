@@ -31,56 +31,38 @@ def make_api_request(access_t, method: str, data: dict = None, params=None) -> d
         bearer_token = f"Bearer {access_t}"
         headers = {"Content-Type": "application/json", "Authorization": bearer_token}
         url = "https://vortex-api.rupeezy.in/v2/trading/orders/regular"
-        st.info(f"Making network call to {url}  , params: {params}, data: {data}, headers: {headers}")
         response = requests.request(method, url, headers=headers, json=data, params=params)
         st.info(f"Response received from {url}  , body: {response.json()}")
         response.raise_for_status()
         return response.json()
 
-def buy_using_api(at):
+def buy_using_api():
+    min_investment = 10000
+    quantity = max(1, math.ceil(min_investment / buy_price))
     data = {
         "exchange": "NSE_EQ",
         "token": 14428,
         "transaction_type": "BUY",
         "product": "DELIVERY",
         "variety": "RL",
-        "quantity": 122,
-        "price": 82.42,
+        "quantity": quantity,
+        "price": buy_price,
         "trigger_price": 0.0,
         "disclosed_quantity": 0,
         "validity": "DAY",
-        "validity_days": 1,
         "is_amo": True
     }
-
-    make_api_request(token, "POST", data=data)
-
-
-
-
-def buy(buy_price):
-    min_investment = 10000
-    quantity = max(1, math.ceil(min_investment / buy_price))
 
     # Display order details
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
-            **Instrument Token:** `{"GOLDBEES"}`    
-            **Quantity:** `{quantity}`  
-            **Order Value:** `₹{quantity * buy_price}`  
-            **Price:** `₹{buy_price}`
-            """)
-    st.info("exchange= " + Constants.ExchangeTypes.NSE_EQUITY + ", token=" + str(ETF_TOKEN) + ","
-                        "transaction_type=" + Constants.TransactionSides.BUY + ", product=" + Constants.ProductTypes.DELIVERY + ","
-                        "variety=" + Constants.VarietyTypes.REGULAR_LIMIT_ORDER + ","
-                        "quantity=" + str(quantity) + ", price=" + str(buy_price) + ", validity=" + Constants.ValidityTypes.AFTER_MARKET)
+                **Instrument Token:** `{"GOLDBEES"}`    
+                **Quantity:** `{quantity}`  
+                **Order Value:** `₹{quantity * buy_price}`  
+                **Price:** `₹{buy_price}`
+                """)
 
-    api_response = client.place_order(exchange= Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN,
-                        transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
-                        variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER,
-                        quantity=quantity, price=buy_price,trigger_price=0.0,
-                        disclosed_quantity= 0, validity=Constants.ValidityTypes.AFTER_MARKET)
-
+    api_response = make_api_request(token, "POST", data=data)
     st.success(f"✅ Buy order placed successfully: {api_response}")
 
 def get_buy_price():
@@ -134,11 +116,7 @@ else:
             token_resp = client.exchange_token(st.session_state.access_token)
             token = token_resp["data"]["access_token"]
             orders = client.orders(limit=20, offset=1)
-            buy_rate = get_buy_price()
-            buy_using_api(token)
-            buy(buy_rate)
-
-
-
+            buy_price = get_buy_price()
+            buy_using_api()
         except Exception as e:
             st.error(f"Something went wrong: {e}")
