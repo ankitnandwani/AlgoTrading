@@ -2,6 +2,7 @@ import json
 import math
 from datetime import datetime, timedelta, UTC
 
+import requests
 import streamlit as st
 from vortex_api import VortexAPI, Constants
 
@@ -26,6 +27,15 @@ def load_symbol_to_instrument_key_map(json_file="complete.json"):
 
     return symbol_map
 
+def make_api_request(access_t, method: str, data: dict = None, params=None) -> dict:
+        bearer_token = f"Bearer {access_t}"
+        headers = {"Content-Type": "application/json", "Authorization": bearer_token}
+        url = "https://vortex-api.rupeezy.in/v2/trading/orders/regular"
+        st.info(f"Making network call to {url}  , params: {params}, data: {data}, headers: {headers}")
+        response = requests.request(method, url, headers=headers, json=data, params=params)
+        st.info(f"Response received from {url}  , body: {response.json()}")
+        response.raise_for_status()
+        return response.json()
 
 def buy(buy_price):
     min_investment = 10000
@@ -100,10 +110,13 @@ else:
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            token = client.exchange_token(st.session_state.access_token)
+            token_resp = client.exchange_token(st.session_state.access_token)
+            st.info("token : " + str(token_resp))
+            token = token_resp["data"]["access_token"]
             st.info("token : " + str(token))
             orders = client.orders(limit=20, offset=1)
             buy_rate = get_buy_price()
+            #make_api_request()
             buy(buy_rate)
 
 
