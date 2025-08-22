@@ -32,7 +32,6 @@ def make_api_request(access_t, method: str, data: dict = None, params=None) -> d
         headers = {"Content-Type": "application/json", "Authorization": bearer_token}
         url = "https://vortex-api.rupeezy.in/v2/trading/orders/regular"
         response = requests.request(method, url, headers=headers, json=data, params=params)
-        st.info(f"Response received from {url}  , body: {response.json()}")
         response.raise_for_status()
         return response.json()
 
@@ -77,8 +76,6 @@ def get_buy_price():
     return buy_p
 
 
-
-
 # 🔐 UI Components
 st.title("📊 GOLDBEES ETF")
 
@@ -115,7 +112,6 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(st.session_state.access_token)
             token = token_resp["data"]["access_token"]
-            orders = client.orders(limit=20, offset=1)
             buy_price = get_buy_price()
             buy_using_api()
         except Exception as e:
