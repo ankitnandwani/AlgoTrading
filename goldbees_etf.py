@@ -67,6 +67,7 @@ else:
             start = datetime(2025, 8, 21)  # start datetime
             to = datetime(2025, 8, 21)  # end datetime
             hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN, to=to, start=start, resolution=Constants.Resolutions.DAY)
+            st.info("hist : " + str(hist))
             close_price = hist['c'][0]
             st.info("close_price : " + str(close_price))
         except Exception as e:
