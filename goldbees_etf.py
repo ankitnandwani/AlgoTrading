@@ -37,6 +37,27 @@ def make_api_request(access_t, method: str, data: dict = None, params=None) -> d
         response.raise_for_status()
         return response.json()
 
+def buy_using_api(at):
+    data = {
+        "exchange": "NSE_EQ",
+        "token": 14428,
+        "transaction_type": "BUY",
+        "product": "DELIVERY",
+        "variety": "RL",
+        "quantity": 122,
+        "price": 82.42,
+        "trigger_price": 0.0,
+        "disclosed_quantity": 0,
+        "validity": "DAY",
+        "validity_days": 1,
+        "is_amo": True
+    }
+
+    make_api_request(token, "POST", data=data)
+
+
+
+
 def buy(buy_price):
     min_investment = 10000
     quantity = max(1, math.ceil(min_investment / buy_price))
@@ -111,12 +132,10 @@ else:
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(st.session_state.access_token)
-            st.info("token : " + str(token_resp))
             token = token_resp["data"]["access_token"]
-            st.info("token : " + str(token))
             orders = client.orders(limit=20, offset=1)
             buy_rate = get_buy_price()
-            #make_api_request()
+            buy_using_api(token)
             buy(buy_rate)
 
 
