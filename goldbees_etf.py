@@ -40,7 +40,7 @@ def buy(buy_price):
             **Price:** `₹{buy_price}`
             """)
     st.info("exchange= " + Constants.ExchangeTypes.NSE_EQUITY + ", token=" + str(ETF_TOKEN) + ","
-                        "transaction_type=" + Constants.TransactionSides.BUY + ", product=" + Constants.ProductTypes.MTF + ","
+                        "transaction_type=" + Constants.TransactionSides.BUY + ", product=" + Constants.ProductTypes.DELIVERY + ","
                         "variety=" + Constants.VarietyTypes.REGULAR_LIMIT_ORDER + ","
                         "quantity=" + str(quantity) + ", price=" + str(buy_price) + ", validity=" + Constants.ValidityTypes.AFTER_MARKET)
 
