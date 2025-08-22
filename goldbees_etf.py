@@ -39,11 +39,11 @@ def buy(buy_price):
             **Order Value:** `₹{quantity * buy_price}`  
             **Price:** `₹{buy_price}`
             """)
-    st.info(exchange= Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN,
-                        transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
-                        variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER,
-                        quantity=quantity, price=buy_price,trigger_price=0.0,
-                        disclosed_quantity= 0, validity=Constants.ValidityTypes.AFTER_MARKET)
+    st.info("exchange= " + Constants.ExchangeTypes.NSE_EQUITY + ", token=" + str(ETF_TOKEN) + ","
+                        "transaction_type=" + Constants.TransactionSides.BUY + ", product=" + Constants.ProductTypes.MTF + ","
+                        "variety=" + Constants.VarietyTypes.REGULAR_LIMIT_ORDER + ","
+                        "quantity=" + quantity + ", price=" + buy_price + ", validity=" + Constants.ValidityTypes.AFTER_MARKET)
+
     api_response = client.place_order(exchange= Constants.ExchangeTypes.NSE_EQUITY, token=ETF_TOKEN,
                         transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
                         variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER,
