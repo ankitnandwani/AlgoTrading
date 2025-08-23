@@ -5,3 +5,5 @@ pandas~=2.3.1
 requests~=2.32.4
 nsepython~=2.97
 vortex_api
+yfinance~=0.2.65
+ta~=0.11.0
