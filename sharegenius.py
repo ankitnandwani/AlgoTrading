@@ -21,12 +21,26 @@ def google_auth():
 
     # Authorize and open the sheet
     client = gspread.authorize(creds)
-    sheet = client.open_by_key("1QB1fhQX_VPGuQodFzJ38RfUQFWOLnE9GLbjaRnYIpP8").worksheet(
-        "ETF shop")  # adjust sheet name or index
+    ss = client.open_by_key("1QB1fhQX_VPGuQodFzJ38RfUQFWOLnE9GLbjaRnYIpP8")
+    etf_shop = ss.worksheet("ETF shop")
+    jewellers_shop = ss.worksheet("Jewellers Shop")
+    top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
 
-    # Fetch the entire “NSE Code” column
-    all_nse_codes = sheet.col_values(1)  # if “NSE Code” is the first column
-    st.info("all_nse_codes : " + str(all_nse_codes))
+    # ETF Shop
+    etf_shop_all = etf_shop.col_values(2)  # if “NSE Code” is the first column
+    etf_shop_cleaned = etf_shop_all[1:]
+    etf_shop_cleaned = [code.replace("NSE:", "").strip() for code in etf_shop_cleaned]
+
+    # Jewellers Shop
+    jewellers_shop_all = jewellers_shop.col_values(2)  # if “NSE Code” is the first column
+    jewellers_shop_cleaned = jewellers_shop_all[1:]
+    jewellers_shop_cleaned = [code.replace("NSE:", "").strip() for code in jewellers_shop_cleaned]
+
+    # top nifty
+    top_nifty_shop_all = top_nifty_shop.col_values(2)  # if “NSE Code” is the first column
+    top_nifty_shop_cleaned = top_nifty_shop_all[1:]
+    top_nifty_shop_cleaned = [code.replace("NSE:", "").strip() for code in top_nifty_shop_cleaned]
+    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned
 
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_key, n=20, days_buffer=60):
@@ -65,11 +79,11 @@ def load_symbol_to_instrument_key_map(json_file="complete.json"):
 
 
 # ✅ Main computation
-def compute_top2_nifty_below_ma():
+def compute_top3(shop):
     results = []
     symbol_to_key = load_symbol_to_instrument_key_map("complete.json")
 
-    for sym in nifty50_list:
+    for sym in shop:
         try:
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
@@ -87,7 +101,7 @@ def compute_top2_nifty_below_ma():
 
     df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
     df = df.sort_values("Deviation%")
-    return df.head(2)
+    return df.head(3)
 
 
 def buy(instrument_key, ltp):
@@ -149,7 +163,7 @@ def sell(instrument_key, ltp):
 
     quantity=0
     for item in portfolio.data:
-        if item.tradingsymbol not in nifty50_list:
+        if item.tradingsymbol not in etf:
             continue
 
         if item.instrument_token == instrument_key:
@@ -221,7 +235,7 @@ def getOrderHistory():
         buy_orders = [o for o in orders if o.transaction_type == "BUY"]
         for order in buy_orders:
             symbol = order.symbol
-            if symbol not in nifty50_list:
+            if symbol not in etf:
                 continue
             if symbol not in order_summary:
                 order_summary[symbol] = {
@@ -244,7 +258,7 @@ def averaging():
     candidates = []
 
     for item in portfolio.data:
-        if item.tradingsymbol not in nifty50_list:
+        if item.tradingsymbol not in etf:
             continue
 
         info = order_summary.get(item.tradingsymbol)
@@ -299,8 +313,34 @@ run = st.button("🚀 Run Analysis and buy")
 
 if run:
     try:
-        nifty50_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
-        st.info("etf_list : " + str(nifty50_list))
+        etf, jewel, nifty = google_auth()
+        st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
+        st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
+        st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
+
+        etf3 = compute_top3(etf)
+        if not etf3.empty:
+            st.subheader("📈 Top 3 ETF Below MA20")
+            st.dataframe(etf3)
+
+        else:
+            st.info("No qualifying ETF found.")
+
+        jewel3 = compute_top3(jewel)
+        if not etf3.empty:
+            st.subheader("📈 Top 3 Jewelry Below MA20")
+            st.dataframe(etf3)
+
+        else:
+            st.info("No qualifying Jewelry found.")
+
+        nifty3 = compute_top3(jewel)
+        if not etf3.empty:
+            st.subheader("📈 Top 3 Stocks Below MA20")
+            st.dataframe(etf3)
+
+        else:
+            st.info("No qualifying Stocks found.")
 
         config = upstox_client.Configuration()
         config.access_token = access_token
@@ -318,24 +358,12 @@ if run:
 
         # Global injection for helper functions
         globals().update({
-            "nifty50_list": nifty50_list,
             "history_api": history_api,
             "quote_api": quote_api,
             "portfolio_api": portfolio_api,
             "order_api": order_api,
             "api_version": api_version,
         })
-
-        google_auth()
-
-        top5 = compute_top2_nifty_below_ma()
-        if not top5.empty:
-            st.subheader("📈 Top 2 Penny ETF Below MA20")
-            st.dataframe(top5)
-            get_current_portfolio(top5)
-            averaging()
-        else:
-            st.info("No qualifying ETF found.")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
