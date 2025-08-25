@@ -328,6 +328,7 @@ else:
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
+            st.info("auth_token : " + str(auth_token))
             token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
