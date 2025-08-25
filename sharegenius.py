@@ -51,7 +51,7 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
     st.info("hist : " + str(hist))
-    closes = [candle[4] for candle in hist]  # 4th index is 'close'
+    closes = hist['c']
     return closes[:n] if len(closes) >= n else []
 
 
@@ -92,6 +92,7 @@ def compute_top3(shop):
 
             ma20 = (sum(closes)) / 20
             dev = ((ltp - ma20) / ma20) * 100
+            st.info(" dev : " + str(dev))
             results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
@@ -338,7 +339,7 @@ else:
             jewel3 = compute_top3(jewel)
             if not etf3.empty:
                 st.subheader("📈 Top 3 Jewelry Below MA20")
-                st.dataframe(etf3)
+                st.dataframe(jewel3)
 
             else:
                 st.info("No qualifying Jewelry found.")
@@ -346,7 +347,7 @@ else:
             nifty3 = compute_top3(jewel)
             if not etf3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
-                st.dataframe(etf3)
+                st.dataframe(nifty3)
 
             else:
                 st.info("No qualifying Stocks found.")
