@@ -4,7 +4,6 @@ import math
 import gspread
 import pandas as pd
 import upstox_client
-from nsepython import nsefetch
 from upstox_client.rest import ApiException
 import json
 from datetime import datetime, timedelta, UTC, timezone

@@ -4,6 +4,8 @@ niftystocks~=0.1.2
 pandas~=2.3.1
 requests~=2.32.4
 nsepython~=2.97
-vortex_api
 yfinance~=0.2.65
 ta~=0.11.0
+gspread~=6.2.1
+protobuf~=6.32.0
+vortex_api~=2.0.2
