@@ -76,7 +76,7 @@ def load_symbol_to_instrument_key_map(json_file="master_nse_eq.json"):
 # ✅ Main computation
 def compute_top3(shop):
     results = []
-    symbol_to_key = load_symbol_to_instrument_key_map("master.csv")
+    symbol_to_key = load_symbol_to_instrument_key_map()
 
     for sym in shop:
         st.info(f"symbol: {sym}")
