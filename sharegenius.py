@@ -1,3 +1,4 @@
+import csv
 import datetime
 import math
 
@@ -64,20 +65,16 @@ def get_ltp(instrument_token):
 
 
 # symbol to instrument key mapping
-def load_symbol_to_instrument_key_map(json_file="complete.json"):
-    with open(json_file, 'r') as f:
-        instruments = json.load(f)
-
+def load_symbol_to_instrument_key_map(csv_file="master.csv"):
     symbol_map = {}
 
-    for inst in instruments:
-        if (
-                inst.get("segment") == "NSE_EQ" and
-                inst.get("instrument_type") == "EQ" and
-                "trading_symbol" in inst and
-                "instrument_key" in inst
-        ):
-            symbol_map[inst["trading_symbol"]] = inst["instrument_key"]
+    with open(csv_file, mode="r", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            token = row.get("token")
+            symbol = row.get("symbol")
+            if token and symbol:  # ensure both are present
+                symbol_map[symbol] = token
 
     return symbol_map
 
@@ -85,9 +82,7 @@ def load_symbol_to_instrument_key_map(json_file="complete.json"):
 # ✅ Main computation
 def compute_top3(shop):
     results = []
-    st.info("start")
-    symbol_to_key = load_symbol_to_instrument_key_map("complete.json")
-    st.info(f"symbol_to_key: {symbol_to_key}")
+    symbol_to_key = load_symbol_to_instrument_key_map("master.csv")
 
     for sym in shop:
         st.info(f"symbol: {sym}")
