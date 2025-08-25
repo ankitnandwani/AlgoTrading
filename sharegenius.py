@@ -17,7 +17,7 @@ st.set_page_config(page_title="Share Genius Mall", layout="centered")
 def google_auth():
     # Define scope and load credentials
     scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    creds = Credentials.from_service_account_file("gen-lang-client-0433533671-444c2d4e9741.json", scopes=scopes)
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
 
     # Authorize and open the sheet
     client = gspread.authorize(creds)
@@ -324,12 +324,10 @@ if not auth_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
-    st.info("auth_token : " + str(auth_token))
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            st.info("auth_token : " + str(auth_token))
             token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
