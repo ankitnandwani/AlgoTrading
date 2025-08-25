@@ -44,13 +44,14 @@ def google_auth():
     return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned
 
 # 🛠 Helper: Get historical closes
-def get_last_n_closes(instrument_key, n=20, days_buffer=60):
+def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
-    resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
-                                                   to_date=to_date, from_date=from_date)
-    candles = resp.data.candles
-    closes = [candle[4] for candle in candles]  # 4th index is 'close'
+    hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
+                                     start=from_date,
+                                     resolution=Constants.Resolutions.DAY)
+    st.info("hist : " + str(hist))
+    closes = [candle[4] for candle in hist]  # 4th index is 'close'
     return closes[:n] if len(closes) >= n else []
 
 
@@ -69,7 +70,6 @@ def load_symbol_to_instrument_key_map(json_file="master_nse_eq.json"):
     with open(json_file, "r") as f:
         symbol_map = json.load(f)
 
-    st.info("symbol_map : " + str(symbol_map))
     return symbol_map
 
 
@@ -85,7 +85,7 @@ def compute_top3(shop):
             if not instrument_key:
                 continue
             ltp = get_ltp(instrument_key)
-            st.info("sym : " + str(sym) + " ltp : " + str(ltp))
+            st.info(" ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
                 continue
