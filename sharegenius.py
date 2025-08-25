@@ -85,9 +85,12 @@ def load_symbol_to_instrument_key_map(json_file="complete.json"):
 # ✅ Main computation
 def compute_top3(shop):
     results = []
+    st.info("start")
     symbol_to_key = load_symbol_to_instrument_key_map("complete.json")
+    st.info(f"symbol_to_key: {symbol_to_key}")
 
     for sym in shop:
+        st.info(f"symbol: {sym}")
         try:
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
