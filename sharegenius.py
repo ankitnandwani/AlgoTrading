@@ -11,7 +11,7 @@ import streamlit as st
 from google.oauth2.service_account import Credentials
 from vortex_api import VortexAPI, Constants
 
-st.set_page_config(page_title="Penny ETF", layout="centered")
+st.set_page_config(page_title="Share Genius Mall", layout="centered")
 
 
 def google_auth():
@@ -21,7 +21,7 @@ def google_auth():
 
     # Authorize and open the sheet
     client = gspread.authorize(creds)
-    ss = client.open_by_key("1QB1fhQX_VPGuQodFzJ38RfUQFWOLnE9GLbjaRnYIpP8")
+    ss = client.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
     top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
@@ -328,7 +328,7 @@ else:
     if st.button("🚀 Run Analysis and Trade"):
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
-            token_resp = client.exchange_token(st.session_state.access_token)
+            token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
