@@ -68,14 +68,19 @@ def get_ltp(instrument_token):
 def load_symbol_to_instrument_key_map(csv_file="master.csv"):
     symbol_map = {}
 
+    st.info("symbol_map : " + str(symbol_map))
+
     with open(csv_file, mode="r", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            token = row.get("token")
+            rupeezy_token = row.get("token")
+            st.info("rupeezy_token : " + str(rupeezy_token))
             symbol = row.get("symbol")
-            if token and symbol:  # ensure both are present
-                symbol_map[symbol] = token
+            st.info("symbol : " + str(symbol))
+            if rupeezy_token and symbol:  # ensure both are present
+                symbol_map[symbol] = rupeezy_token
 
+    st.info("symbol_map : " + str(symbol_map))
     return symbol_map
 
 
