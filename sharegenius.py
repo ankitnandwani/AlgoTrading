@@ -324,6 +324,7 @@ if not auth_token:
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
+    st.info("auth_token : " + str(auth_token))
 
     if st.button("🚀 Run Analysis and Trade"):
         try:
