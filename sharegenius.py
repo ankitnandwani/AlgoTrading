@@ -10,6 +10,7 @@ import json
 from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
 from google.oauth2.service_account import Credentials
+from vortex_api import VortexAPI, Constants
 
 st.set_page_config(page_title="Penny ETF", layout="centered")
 
@@ -54,9 +55,13 @@ def get_last_n_closes(instrument_key, n=20, days_buffer=60):
 
 
 # 🛠 Helper: Get live LTP
-def get_ltp(instrument_key, sym):
-    response = quote_api.get_ltp(instrument_key=instrument_key)
-    return response.data['NSE_EQ:' + sym].last_price
+def get_ltp(instrument_token):
+    start = datetime.now(UTC) - timedelta(days=1)
+    to = datetime.now(UTC)
+    hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to, start=start,
+                                     resolution=Constants.Resolutions.DAY)
+    close_price = hist['c'][0]
+    return close_price
 
 
 # symbol to instrument key mapping
@@ -88,7 +93,8 @@ def compute_top3(shop):
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
                 continue
-            ltp = get_ltp(instrument_key, sym)
+            ltp = get_ltp(instrument_key)
+            st.info("sym : " + str(sym) + " ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
                 continue
@@ -304,66 +310,77 @@ def averaging():
 # 🔐 UI Components
 st.title("📊 Share Genius Mall")
 
-API_KEY = "kdYNchen1BKmeQbK22ingVtEDmd2sph8jKcDNKzf"
-APPLICATION_ID = "dev_zeHSphjh"
-ETF_TOKEN = 14428
+API_KEY = st.secrets["API_KEY"]
+APPLICATION_ID = st.secrets["APPLICATION_ID"]
+auth_token = st.query_params.get("auth")
 
-access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
-run = st.button("🚀 Run Analysis and buy")
+if not auth_token:
+    # Show login button if user not authenticated
+    login_url = f"https://flow.rupeezy.in?applicationId={APPLICATION_ID}"
+    st.markdown(
+        f'<a href="{login_url}" target="_blank">'
+        f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
+        f'</a>',
+        unsafe_allow_html = True
+    )
+else:
+    st.success("✅ Successfully logged in with Rupeezy")
 
-if run:
-    try:
-        etf, jewel, nifty = google_auth()
-        st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
-        st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
-        st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
+    if st.button("🚀 Run Analysis and Trade"):
+        try:
+            client = VortexAPI(API_KEY, APPLICATION_ID)
+            token_resp = client.exchange_token(st.session_state.access_token)
+            token = token_resp["data"]["access_token"]
+            etf, jewel, nifty = google_auth()
+            st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
+            st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
+            st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
 
-        etf3 = compute_top3(etf)
-        if not etf3.empty:
-            st.subheader("📈 Top 3 ETF Below MA20")
-            st.dataframe(etf3)
+            etf3 = compute_top3(etf)
+            if not etf3.empty:
+                st.subheader("📈 Top 3 ETF Below MA20")
+                st.dataframe(etf3)
 
-        else:
-            st.info("No qualifying ETF found.")
+            else:
+                st.info("No qualifying ETF found.")
 
-        jewel3 = compute_top3(jewel)
-        if not etf3.empty:
-            st.subheader("📈 Top 3 Jewelry Below MA20")
-            st.dataframe(etf3)
+            jewel3 = compute_top3(jewel)
+            if not etf3.empty:
+                st.subheader("📈 Top 3 Jewelry Below MA20")
+                st.dataframe(etf3)
 
-        else:
-            st.info("No qualifying Jewelry found.")
+            else:
+                st.info("No qualifying Jewelry found.")
 
-        nifty3 = compute_top3(jewel)
-        if not etf3.empty:
-            st.subheader("📈 Top 3 Stocks Below MA20")
-            st.dataframe(etf3)
+            nifty3 = compute_top3(jewel)
+            if not etf3.empty:
+                st.subheader("📈 Top 3 Stocks Below MA20")
+                st.dataframe(etf3)
 
-        else:
-            st.info("No qualifying Stocks found.")
+            else:
+                st.info("No qualifying Stocks found.")
 
-        config = upstox_client.Configuration()
-        config.access_token = access_token
-        api_client = upstox_client.ApiClient(config)
+            config = upstox_client.Configuration()
+            api_client = upstox_client.ApiClient(config)
 
-        login_api = upstox_client.LoginApi(api_client)
-        history_api = upstox_client.HistoryV3Api(api_client)
-        quote_api = upstox_client.MarketQuoteV3Api(api_client)
-        portfolio_api = upstox_client.PortfolioApi(api_client)
-        post_trade_api = upstox_client.PostTradeApi(api_client)
-        order_api = upstox_client.OrderApiV3(api_client)
-        order_apiv1 = upstox_client.OrderApi(api_client)
-        api_version = '2.0'
-        portfolio = portfolio_api.get_holdings(api_version)
+            login_api = upstox_client.LoginApi(api_client)
+            history_api = upstox_client.HistoryV3Api(api_client)
+            quote_api = upstox_client.MarketQuoteV3Api(api_client)
+            portfolio_api = upstox_client.PortfolioApi(api_client)
+            post_trade_api = upstox_client.PostTradeApi(api_client)
+            order_api = upstox_client.OrderApiV3(api_client)
+            order_apiv1 = upstox_client.OrderApi(api_client)
+            api_version = '2.0'
+            portfolio = portfolio_api.get_holdings(api_version)
 
-        # Global injection for helper functions
-        globals().update({
-            "history_api": history_api,
-            "quote_api": quote_api,
-            "portfolio_api": portfolio_api,
-            "order_api": order_api,
-            "api_version": api_version,
-        })
+            # Global injection for helper functions
+            globals().update({
+                "history_api": history_api,
+                "quote_api": quote_api,
+                "portfolio_api": portfolio_api,
+                "order_api": order_api,
+                "api_version": api_version,
+            })
 
-    except Exception as e:
-        st.error(f"Something went wrong: {e}")
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
