@@ -51,7 +51,7 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
     st.info("hist : " + str(hist))
-    closes = hist['c']
+    closes = hist['c'][::-1]
     closes = closes.reverse()
     return closes[:n] if len(closes) >= n else []
 
