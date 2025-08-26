@@ -45,8 +45,10 @@ def google_auth():
 
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_token, n=20, days_buffer=60):
-    to_date = datetime.now(UTC) - timedelta(days=1)
+    to_date = datetime.now(UTC)
+    st.info("to_date : " + str(to_date))
     from_date = datetime.now(UTC) - timedelta(days=days_buffer)
+    st.info("from_date : " + str(from_date))
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
