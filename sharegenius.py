@@ -45,7 +45,7 @@ def google_auth():
 
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_token, n=20, days_buffer=60):
-    to_date = datetime.now(UTC)
+    to_date = datetime.now(UTC) - timedelta(days=1)
     from_date = datetime.now(UTC) - timedelta(days=days_buffer)
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
                                      start=from_date,
@@ -325,10 +325,8 @@ else:
             token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
-            st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
-            st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
-            st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
 
+            st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
             if not etf3.empty:
                 st.subheader("📈 Top 3 ETF Below MA20")
@@ -337,6 +335,7 @@ else:
             else:
                 st.info("No qualifying ETF found.")
 
+            st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
             jewel3 = compute_top3(jewel)
             if not etf3.empty:
                 st.subheader("📈 Top 3 Jewelry Below MA20")
@@ -345,6 +344,7 @@ else:
             else:
                 st.info("No qualifying Jewelry found.")
 
+            st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
             nifty3 = compute_top3(jewel)
             if not etf3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
