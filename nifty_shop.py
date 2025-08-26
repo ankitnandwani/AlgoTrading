@@ -6,9 +6,11 @@ import upstox_client
 from nsepython import nsefetch
 from upstox_client.rest import ApiException
 import json
-from datetime import datetime, timedelta, UTC, timezone
+from datetime import datetime, timedelta, timezone
 import streamlit as st
 from ta.momentum import RSIIndicator
+
+UTC = timezone.utc
 
 st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
 
@@ -277,6 +279,7 @@ def averaging():
     for stock in candidates:
         order_count = stock["order_count"]
         rsi = rsi_map.get(stock["symbol"])
+        st.info("stock : " + str(stock) + " order_count : " + str(order_count) + " rsi : " + str(rsi))
         if ((order_count == 1 and rsi<30) or
             (order_count == 2 and rsi<25) or
             (order_count == 3 and rsi<20) or
