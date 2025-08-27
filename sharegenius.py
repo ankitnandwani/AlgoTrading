@@ -114,12 +114,15 @@ def load_symbol_to_instrument_key_map(json_file="master_nse_eq.json"):
 def compute_top3(shop):
     results = []
     symbol_to_key = load_symbol_to_instrument_key_map()
+    st.info("symbol_to_key : " + str(symbol_to_key))
     price = get_ltp2()
+    st.info("price : " + str(price))
 
     for sym in shop:
         st.info(f"symbol: {sym}")
         try:
             instrument_key = symbol_to_key.get(sym)
+            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
@@ -376,7 +379,7 @@ else:
 
             st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
             jewel3 = compute_top3(jewel)
-            if not etf3.empty:
+            if not jewel3.empty:
                 st.subheader("📈 Top 3 Jewelry Below MA20")
                 st.dataframe(jewel3)
 
@@ -385,7 +388,7 @@ else:
 
             st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
             nifty3 = compute_top3(jewel)
-            if not etf3.empty:
+            if not nifty3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
                 st.dataframe(nifty3)
 
