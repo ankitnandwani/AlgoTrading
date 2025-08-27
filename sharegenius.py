@@ -87,7 +87,6 @@ def compute_top3(shop):
     results = []
 
     for sym in shop:
-        st.info(f"symbol: {sym}")
         try:
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
