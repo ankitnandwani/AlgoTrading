@@ -68,6 +68,11 @@ def get_ltp(instrument_token):
     st.info("start : " + str(start))
     to = datetime.now(UTC) - timedelta(days=1)
     st.info("to : " + str(to))
+    instrument_token2 = [f"NSE_EQ-{item}" for item in instrument_token]
+    st.info("instrument_token2 : " + str(instrument_token2))
+
+    ltp = client.quotes(instruments=instrument_token2, mode=Constants.QuoteModes.LTP)
+    st.info("ltp : " + str(ltp))
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to, start=start,
                                      resolution=Constants.Resolutions.DAY)
     st.info("hist : " + str(hist))
