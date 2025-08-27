@@ -68,7 +68,7 @@ def get_ltp(instrument_token):
     st.info("start : " + str(start))
     to = datetime.now(UTC) - timedelta(days=1)
     st.info("to : " + str(to))
-    instrument_token2 = [f"NSE_EQ-{item}" for item in instrument_token]
+    instrument_token2 = [f"NSE_EQ-{instrument_token}"]
     st.info("instrument_token2 : " + str(instrument_token2))
 
     ltp = client.quotes(instruments=instrument_token2, mode=Constants.QuoteModes.LTP)
@@ -79,6 +79,27 @@ def get_ltp(instrument_token):
     st.info("hist in ltp: " + str(hist))
     close_price = hist['c'][0]
     return close_price
+
+def get_ltp2():
+    all_products = etf + jewel + nifty
+    st.info("all_products : " + str(all_products))
+    instrument_token = [f"NSE_EQ-{item}" for item in all_products]
+    st.info("instrument_token : " + str(instrument_token))
+
+    response = client.quotes(instruments=instrument_token, mode=Constants.QuoteModes.LTP)
+    st.info("ltp : " + str(response))
+
+    last_trade_prices = {}
+
+    for key in all_products:
+        if key in response["data"]:  # check if key exists in response
+            price = response["data"][key]["last_trade_price"]
+            last_trade_prices[key] = price
+            st.info("key : " + str(key) + " price : " + str(price))
+
+
+    return last_trade_prices
+
 
 
 # symbol to instrument key mapping
@@ -93,6 +114,7 @@ def load_symbol_to_instrument_key_map(json_file="master_nse_eq.json"):
 def compute_top3(shop):
     results = []
     symbol_to_key = load_symbol_to_instrument_key_map()
+    price = get_ltp2()
 
     for sym in shop:
         st.info(f"symbol: {sym}")
@@ -100,7 +122,9 @@ def compute_top3(shop):
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
                 continue
-            ltp = get_ltp(instrument_key)
+
+            st.info("price : " + str(price))
+            ltp = price["NSE_EQ-"+instrument_key]
             st.info(" ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
