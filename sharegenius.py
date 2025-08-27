@@ -106,6 +106,9 @@ def compute_top3(shop):
                 continue
 
             ma20 = (sum(closes)) / 20
+            st.info(" 20DMA : " + str(ma20))
+            cmpmtdma = ltp - ma20
+            st.info("cmpmtdma" + str(cmpmtdma))
             dev = ((ltp - ma20) / ma20) * 100
             st.info(" dev : " + str(dev))
             results.append((sym, ltp, ma20, dev, instrument_key))
