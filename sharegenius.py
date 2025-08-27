@@ -201,7 +201,7 @@ def sell(instrument_key, ltp):
 
 
 
-def get_current_portfolio(top5stocks):
+def get_current_portfolio(top3stocks):
     existing_holdings = {item.instrument_token for item in portfolio.data}
     existing_orders = order_apiv1.get_order_book(api_version=api_version)
     executed_order_tokens = {
@@ -209,7 +209,7 @@ def get_current_portfolio(top5stocks):
         for order in existing_orders.data
         if order.status in {"complete"}  # relevant open statuses
     }
-    for _, row in top5stocks.iterrows():
+    for _, row in top3stocks.iterrows():
         token = row['Instrument_token']
         symbol = row['Symbol']
 
@@ -333,13 +333,15 @@ else:
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             price = get_ltp()
+            portfolio = client.holdings()
+            st.info("portfolio : " + str(portfolio))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
             if not etf3.empty:
                 st.subheader("📈 Top 3 ETF Below MA20")
                 st.dataframe(etf3)
-
+                get_current_portfolio(etf3)
             else:
                 st.info("No qualifying ETF found.")
 
@@ -373,6 +375,7 @@ else:
             order_apiv1 = upstox_client.OrderApi(api_client)
             api_version = '2.0'
             portfolio = portfolio_api.get_holdings(api_version)
+
 
             # Global injection for helper functions
             globals().update({
