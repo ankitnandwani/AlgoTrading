@@ -46,20 +46,14 @@ def google_auth():
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     to_date = datetime.now(UTC)
-    st.info("to_date : " + str(to_date))
     from_date = datetime.now(UTC) - timedelta(days=days_buffer)
-    st.info("from_date : " + str(from_date))
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
-    st.info("hist : " + str(hist))
+
     closes = hist['c']
-    st.info("closes : " + str(closes))
-    closerev = closes[::-1]
-    st.info("closerev : " + str(closerev))
-    clos20 = closerev[:n]
-    st.info("clos20 : " + str(clos20))
-    return closerev[:n] if len(closerev) >= n else []
+    close_rev = closes[::-1]
+    return close_rev[:n] if len(close_rev) >= n else []
 
 def get_ltp():
     all_products = etf + jewel + nifty
