@@ -83,19 +83,23 @@ def get_ltp(instrument_token):
 def get_ltp2():
     all_products = etf + jewel + nifty
     st.info("all_products : " + str(all_products))
-    instrument_token = [f"NSE_EQ-{item}" for item in all_products]
-    st.info("instrument_token : " + str(instrument_token))
+    instrument_tokens = [
+        symbol_to_key[symbol]
+        for symbol in all_products
+        if symbol in symbol_to_key  # ensure symbol exists in mapping
+    ]
+    st.info("instrument_token : " + str(instrument_tokens))
 
-    response = client.quotes(instruments=instrument_token, mode=Constants.QuoteModes.LTP)
-    st.info("ltp : " + str(response))
+    response = client.quotes(instruments=instrument_tokens, mode=Constants.QuoteModes.LTP)
+    st.info("response : " + str(response))
 
     last_trade_prices = {}
 
     for key in all_products:
         if key in response["data"]:  # check if key exists in response
-            price = response["data"][key]["last_trade_price"]
-            last_trade_prices[key] = price
-            st.info("key : " + str(key) + " price : " + str(price))
+            ltp = response["data"][key]["last_trade_price"]
+            last_trade_prices[key] = ltp
+            st.info("key : " + str(key) + " ltp : " + str(ltp))
 
 
     return last_trade_prices
@@ -113,20 +117,14 @@ def load_symbol_to_instrument_key_map(json_file="master_nse_eq.json"):
 # ✅ Main computation
 def compute_top3(shop):
     results = []
-    symbol_to_key = load_symbol_to_instrument_key_map()
-    st.info("symbol_to_key : " + str(symbol_to_key))
-    price = get_ltp2()
-    st.info("price : " + str(price))
 
     for sym in shop:
         st.info(f"symbol: {sym}")
         try:
             instrument_key = symbol_to_key.get(sym)
-            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
-            st.info("price : " + str(price))
             ltp = price["NSE_EQ-"+instrument_key]
             st.info(" ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
@@ -367,6 +365,10 @@ else:
             token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
+            symbol_to_key = load_symbol_to_instrument_key_map()
+            st.info("symbol_to_key : " + str(symbol_to_key))
+            price = get_ltp2()
+            st.info("price : " + str(price))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
