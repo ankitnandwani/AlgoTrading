@@ -84,7 +84,7 @@ def get_ltp2():
     all_products = etf + jewel + nifty
     st.info("all_products : " + str(all_products))
     instrument_tokens = [
-        symbol_to_key[symbol]
+        f"NSE_EQ-{symbol_to_key[symbol]}"
         for symbol in all_products
         if symbol in symbol_to_key  # ensure symbol exists in mapping
     ]
@@ -366,7 +366,6 @@ else:
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
-            st.info("symbol_to_key : " + str(symbol_to_key))
             price = get_ltp2()
             st.info("price : " + str(price))
 
