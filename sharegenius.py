@@ -57,7 +57,7 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     st.info("closes : " + str(closes))
     closerev = closes[::-1]
     st.info("closerev : " + str(closerev))
-    clos20 = closes[:n]
+    clos20 = closerev[:n]
     st.info("clos20 : " + str(clos20))
     return closerev[:n] if len(closerev) >= n else []
 
