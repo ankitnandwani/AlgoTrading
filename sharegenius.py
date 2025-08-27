@@ -88,14 +88,13 @@ def get_ltp2():
         for symbol in all_products
         if symbol in symbol_to_key  # ensure symbol exists in mapping
     ]
-    st.info("instrument_token : " + str(instrument_tokens))
 
     response = client.quotes(instruments=instrument_tokens, mode=Constants.QuoteModes.LTP)
     st.info("response : " + str(response))
 
     last_trade_prices = {}
 
-    for key in all_products:
+    for key in instrument_tokens:
         if key in response["data"]:  # check if key exists in response
             ltp = response["data"][key]["last_trade_price"]
             last_trade_prices[key] = ltp
