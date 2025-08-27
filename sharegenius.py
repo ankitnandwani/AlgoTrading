@@ -21,8 +21,8 @@ def google_auth():
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
 
     # Authorize and open the sheet
-    client = gspread.authorize(creds)
-    ss = client.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
+    gclient = gspread.authorize(creds)
+    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
     top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
@@ -61,28 +61,8 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     st.info("clos20 : " + str(clos20))
     return closes[:n] if len(closes) >= n else []
 
-
-# 🛠 Helper: Get live LTP
-def get_ltp(instrument_token):
-    start = datetime.now(UTC) - timedelta(days=2)
-    st.info("start : " + str(start))
-    to = datetime.now(UTC) - timedelta(days=1)
-    st.info("to : " + str(to))
-    instrument_token2 = [f"NSE_EQ-{instrument_token}"]
-    st.info("instrument_token2 : " + str(instrument_token2))
-
-    ltp = client.quotes(instruments=instrument_token2, mode=Constants.QuoteModes.LTP)
-    st.info("ltp : " + str(ltp))
-    hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to, start=start,
-                                     resolution=Constants.Resolutions.DAY)
-    st.info("hist : " + str(hist))
-    st.info("hist in ltp: " + str(hist))
-    close_price = hist['c'][0]
-    return close_price
-
-def get_ltp2():
+def get_ltp():
     all_products = etf + jewel + nifty
-    st.info("all_products : " + str(all_products))
     instrument_tokens = [
         f"NSE_EQ-{symbol_to_key[symbol]}"
         for symbol in all_products
@@ -90,19 +70,14 @@ def get_ltp2():
     ]
 
     response = client.quotes(instruments=instrument_tokens, mode=Constants.QuoteModes.LTP)
-    st.info("response : " + str(response))
 
     last_trade_prices = {}
 
     for key in instrument_tokens:
         if key in response["data"]:  # check if key exists in response
-            ltp = response["data"][key]["last_trade_price"]
-            last_trade_prices[key] = ltp
-            st.info("key : " + str(key) + " ltp : " + str(ltp))
-
+            last_trade_prices[key] = response["data"][key]["last_trade_price"]
 
     return last_trade_prices
-
 
 
 # symbol to instrument key mapping
@@ -124,7 +99,7 @@ def compute_top3(shop):
             if not instrument_key:
                 continue
 
-            ltp = price["NSE_EQ-"+instrument_key]
+            ltp = price["NSE_EQ-" + str(instrument_key)]
             st.info(" ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
@@ -365,8 +340,7 @@ else:
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
-            price = get_ltp2()
-            st.info("price : " + str(price))
+            price = get_ltp()
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
