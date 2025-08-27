@@ -64,10 +64,13 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
 
 # 🛠 Helper: Get live LTP
 def get_ltp(instrument_token):
-    start = datetime.now(UTC) - timedelta(days=1)
-    to = datetime.now(UTC)
+    start = datetime.now(UTC) - timedelta(days=2)
+    st.info("start : " + str(start))
+    to = datetime.now(UTC) - timedelta(days=1)
+    st.info("to : " + str(to))
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to, start=start,
                                      resolution=Constants.Resolutions.DAY)
+    st.info("hist : " + str(hist))
     st.info("hist in ltp: " + str(hist))
     close_price = hist['c'][0]
     return close_price
