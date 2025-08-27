@@ -68,6 +68,7 @@ def get_ltp(instrument_token):
     to = datetime.now(UTC)
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to, start=start,
                                      resolution=Constants.Resolutions.DAY)
+    st.info("hist in ltp: " + str(hist))
     close_price = hist['c'][0]
     return close_price
 
