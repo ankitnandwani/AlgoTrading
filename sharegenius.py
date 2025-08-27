@@ -100,17 +100,12 @@ def compute_top3(shop):
                 continue
 
             ltp = price["NSE_EQ-" + str(instrument_key)]
-            st.info(" ltp : " + str(ltp))
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
                 continue
 
             ma20 = (sum(closes)) / 20
-            st.info(" 20DMA : " + str(ma20))
-            cmpmtdma = ltp - ma20
-            st.info("cmpmtdma" + str(cmpmtdma))
             dev = ((ltp - ma20) / ma20) * 100
-            st.info(" dev : " + str(dev))
             results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
