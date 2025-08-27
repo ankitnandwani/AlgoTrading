@@ -105,6 +105,7 @@ def compute_top3(shop):
 
     df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
     df = df.sort_values("Deviation%")
+    df.index = df.index + 1  # start index from 1 for display
     return df.head(3)
 
 
@@ -352,7 +353,7 @@ else:
                 st.info("No qualifying Jewelry found.")
 
             st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
-            nifty3 = compute_top3(jewel)
+            nifty3 = compute_top3(nifty)
             if not nifty3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
                 st.dataframe(nifty3)
