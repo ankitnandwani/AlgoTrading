@@ -14,19 +14,21 @@ UTC = timezone.utc
 
 st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
 
-def get_rsiUpstox(closes):
+
+def get_rsi_upstox(closes):
     closes_series = pd.Series(closes[::-1])
     rsi_14 = RSIIndicator(close=closes_series, window=14)
     rsiSeries = rsi_14.rsi()
     value = rsiSeries.tail(1).iloc[0]
     return value
 
+
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_key, n=99, days_buffer=200):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
-                                                     to_date=to_date, from_date=from_date)
+                                                   to_date=to_date, from_date=from_date)
     candles = resp.data.candles
     closes = [candle[4] for candle in candles]  # 4th index is 'close'
     return closes[:n] if len(closes) >= n else []
@@ -70,7 +72,7 @@ def compute_top5_nifty_below_ma():
 
             ltp = get_ltp(instrument_key, sym)
             closes = get_last_n_closes(instrument_key)
-            rsi = get_rsiUpstox(closes)
+            rsi = get_rsi_upstox(closes)
             results.append((sym, ltp, rsi, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
@@ -82,7 +84,7 @@ def compute_top5_nifty_below_ma():
     return all_df, below35_df
 
 
-def buy(instrument_key, ltp, is_buy_placed):
+def buy(instrument_key, ltp):
     # Get current IST time
     now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
     market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
@@ -120,7 +122,6 @@ def buy(instrument_key, ltp, is_buy_placed):
                                                  trigger_price=0.0, is_amo=is_amo, slice=True)
         api_response = order_api.place_order(body)
         st.success(f"✅ Buy order placed successfully: {api_response}")
-        is_buy_placed = True
     except ApiException as e:
         st.error(f"❌ Failed to place order: {e}")
 
@@ -140,7 +141,7 @@ def sell(instrument_key, ltp):
         price = ltp
         is_amo = True
 
-    quantity=0
+    quantity = 0
     for item in portfolio.data:
         if item.tradingsymbol not in nifty50_list:
             continue
@@ -148,8 +149,6 @@ def sell(instrument_key, ltp):
             quantity = item.quantity
             st.info("symbol : " + str(item.tradingsymbol) + " quantity : " + str(quantity))
             break
-
-
 
     # Display order details
     st.subheader("🛒 Sell Order details")
@@ -174,8 +173,7 @@ def sell(instrument_key, ltp):
         st.error(f"❌ Failed to place order: {e}")
 
 
-
-def get_current_portfolio(top5stocks, is_buy_placed):
+def get_current_portfolio(top5stocks):
     existing_holdings = {item.instrument_token for item in portfolio.data}
     existing_orders = order_apiv1.get_order_book(api_version=api_version)
     executed_order_tokens = {
@@ -183,7 +181,12 @@ def get_current_portfolio(top5stocks, is_buy_placed):
         for order in existing_orders.data
         if order.status in {"complete"}  # relevant open statuses
     }
+
+    global is_buy_done
     for _, row in top5stocks.iterrows():
+        if is_buy_done:
+            return
+
         token = row['Instrument_token']
         symbol = row['Symbol']
 
@@ -193,9 +196,11 @@ def get_current_portfolio(top5stocks, is_buy_placed):
             st.info(f"Order already placed for: {symbol}")
         else:
             st.info(f"Buying new stock: {row['Symbol']}")
-            buy(row['Instrument_token'], row['LTP'], is_buy_placed)
+            buy(row['Instrument_token'], row['LTP'])
+            is_buy_done = True
 
-def getOrderHistory():
+
+def get_order_history():
     today = datetime.now(UTC).date()
     one_year_ago = today - timedelta(days=365)
 
@@ -231,8 +236,8 @@ def getOrderHistory():
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def averaging(is_buy_placed):
-    order_summary = getOrderHistory()
+def averaging():
+    order_summary = get_order_history()
 
     candidates = []
 
@@ -256,7 +261,8 @@ def averaging(is_buy_placed):
             continue
 
         deviation = ((current_price - last_buy_price) / last_buy_price) * 100
-        st.info(item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
+        st.info(
+            item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
 
         if deviation < -3.14:
             candidates.append({
@@ -274,7 +280,7 @@ def averaging(is_buy_placed):
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
-    if is_buy_placed:
+    if is_buy_done:
         st.info("Buy order already placed, skipping averaging")
         return
 
@@ -284,12 +290,12 @@ def averaging(is_buy_placed):
         order_count = stock["order_count"]
         rsi = rsi_map.get(stock["symbol"])
         st.info("stock : " + str(stock) + " order_count : " + str(order_count) + " rsi : " + str(rsi))
-        if ((order_count == 1 and rsi<30) or
-            (order_count == 2 and rsi<25) or
-            (order_count == 3 and rsi<20) or
-            (order_count == 4 and rsi<15) or
-            (order_count == 5 and rsi<10) or
-            (order_count == 6 and rsi<5)):
+        if ((order_count == 1 and rsi < 30) or
+                (order_count == 2 and rsi < 25) or
+                (order_count == 3 and rsi < 20) or
+                (order_count == 4 and rsi < 15) or
+                (order_count == 5 and rsi < 10) or
+                (order_count == 6 and rsi < 5)):
             buy(stock['instrument_token'], stock['ltp'])
             st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
             return
@@ -345,12 +351,11 @@ if run:
         if not rsi_below35.empty:
             st.subheader("📈 Stocks Below 35 RSI")
             st.dataframe(rsi_below35)
-            get_current_portfolio(rsi_below35, is_buy_done)
+            get_current_portfolio(rsi_below35)
         else:
             st.info("No qualifying stocks found.")
 
-        getOrderHistory()
-        averaging(is_buy_done)
+        averaging()
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
