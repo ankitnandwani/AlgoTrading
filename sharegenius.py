@@ -203,16 +203,19 @@ def sell(instrument_key, ltp):
 
 
 
-def get_current_portfolio(top3stocks):
-    existing_holdings = {item["nse"]["token"] for item in portfolio["data"]}
-    st.info("existing_holdings : " + str(existing_holdings))
+def get_current_portfolio():
+    existing_holds = {item["nse"]["token"] for item in portfolio["data"]}
 
-    executed_order_tokens = {
+    executed_ordr_tokens = {
         order["instrument_token"]
         #order.instrument_token
         for order in existing_orders.get("orders", [])
-        if order.get("status") == "COMPLETE"
+        if order.get("status") == "EXECUTED"
     }
+
+    return existing_holds, executed_ordr_tokens
+
+def filter_top3_in_holdings(top3stocks):
     for _, row in top3stocks.iterrows():
         instrument_token = row['Instrument_token']
         symbol = row['Symbol']
@@ -224,7 +227,6 @@ def get_current_portfolio(top3stocks):
         else:
             st.info(f"Buying new ETF: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
-            st.stop()
 
 def getOrderHistory():
     today = datetime.now(UTC).date()
@@ -341,14 +343,15 @@ else:
             st.info("portfolio : " + str(portfolio))
             existing_orders = client.orders(limit=50, offset=1)
             st.info("existing_orders : " + str(existing_orders))
-
+            existing_holdings, executed_order_tokens = get_current_portfolio()
+            st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(executed_order_tokens))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
             if not etf3.empty:
                 st.subheader("📈 Top 3 ETF Below MA20")
                 st.dataframe(etf3)
-                get_current_portfolio(etf3)
+                filter_top3_in_holdings(etf3)
             else:
                 st.info("No qualifying ETF found.")
 
