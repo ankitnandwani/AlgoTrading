@@ -141,7 +141,7 @@ def buy(instrument_key, ltp):
             "trigger_price": 0.0,
             "disclosed_quantity": 0,
             "validity": "DAY",
-            "is_amo": is_amo
+            "is_amo": True
         }
 
         # Display order details
