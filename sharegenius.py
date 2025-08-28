@@ -94,7 +94,7 @@ def compute_top3(shop):
             if not instrument_key:
                 continue
 
-            ltp = price["NSE_EQ-" + str(instrument_key)]
+            ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
             closes = get_last_n_closes(instrument_key)
             if len(closes) < 20:
                 continue
@@ -118,36 +118,53 @@ def buy(instrument_key, ltp):
 
     # Determine order type and AMO status based on current time
     if now_ist < market_close_time:
-        order_type = "MARKET"
-        price = 0.0
+        variety = Constants.VarietyTypes.REGULAR_MARKET_ORDER
         is_amo = False
     else:
-        order_type = "LIMIT"
-        price = ltp
+        variety = Constants.VarietyTypes.REGULAR_LIMIT_ORDER
         is_amo = True
 
     min_investment = 10000
-    quantity = max(1, math.ceil(min_investment / ltp))
+    quantity = max(1, math.ceil((min_investment / ltp)*2))
 
     # Display order details
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
-            **Order Type:** `{order_type}`
+            **Order Type:** `{variety}`
             **Quantity:** `{quantity}`  
             **Order Value:** `₹{quantity * ltp}`  
-            **Price:** `₹{price}`  
+            **Price:** `₹{ltp}`  
             **AMO:** `{is_amo}`
             """)
 
     try:
-        body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
-                                                 price=price, tag="penny_etf", instrument_token=instrument_key,
-                                                 order_type=order_type, transaction_type="BUY",
-                                                 disclosed_quantity=0,
-                                                 trigger_price=0.0, is_amo=is_amo, slice=True)
-        api_response = order_api.place_order(body)
+        data = {
+            "exchange": "NSE_EQ",
+            "token": instrument_key,
+            "transaction_type": "BUY",
+            "product": "DELIVERY",
+            "variety": variety,
+            "quantity": quantity,
+            "price": ltp,
+            "trigger_price": 0.0,
+            "disclosed_quantity": 0,
+            "validity": "DAY",
+            "is_amo": is_amo
+        }
+
+        # Display order details
+        st.subheader("🛒 Buy Order details")
+        st.markdown(f"""
+                        **Instrument Token:** `{"GOLDBEES"}`    
+                        **Quantity:** `{quantity}`
+                        **Order Type:** `{variety}`
+                        **Order Value:** `₹{quantity * ltp}`  
+                        **Price:** `₹{ltp}`
+                        """)
+
+        api_response = make_api_request(token, "POST", data=data)
         st.success(f"✅ Buy order placed successfully: {api_response}")
     except ApiException as e:
         st.error(f"❌ Failed to place order: {e}")
@@ -338,7 +355,8 @@ else:
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
-            price = get_ltp()
+            st.info("get symbol from key : " + str(symbol_to_key.get(757781)))
+            last_trading_price = get_ltp()
             portfolio = client.holdings()
             st.info("portfolio : " + str(portfolio))
             existing_orders = client.orders(limit=50, offset=1)
