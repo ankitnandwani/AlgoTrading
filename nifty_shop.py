@@ -18,8 +18,8 @@ st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
 def get_rsi_upstox(closes):
     closes_series = pd.Series(closes[::-1])
     rsi_14 = RSIIndicator(close=closes_series, window=14)
-    rsiSeries = rsi_14.rsi()
-    value = rsiSeries.tail(1).iloc[0]
+    rsi_series = rsi_14.rsi()
+    value = rsi_series.tail(1).iloc[0]
     return value
 
 
@@ -183,6 +183,7 @@ def get_current_portfolio(top5stocks):
     }
 
     global is_buy_done
+
     for _, row in top5stocks.iterrows():
         if is_buy_done:
             return
@@ -318,7 +319,7 @@ if run:
         nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
         nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
         nifty50_list = nifty50_list + nifty_next50_list
-        st.info("nifty100_list : " + str(nifty50_list))
+        st.info("nifty100_list : " + str(nifty50_list) + " count : " + str(len(nifty50_list)))
 
         config = upstox_client.Configuration()
         config.access_token = access_token
