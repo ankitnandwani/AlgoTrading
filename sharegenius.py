@@ -12,6 +12,8 @@ import streamlit as st
 from google.oauth2.service_account import Credentials
 from vortex_api import VortexAPI, Constants
 
+from goldbees_etf import make_api_request
+
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
 
 
@@ -127,18 +129,6 @@ def buy(instrument_key, ltp):
     min_investment = 10000
     quantity = max(1, math.ceil((min_investment / ltp)*2))
 
-    # Display order details
-    st.subheader("🛒 Buy Order details")
-    st.markdown(f"""
-            **Instrument Token:** `{instrument_key}`  
-            **LTP:** `₹{ltp}`  
-            **Order Type:** `{variety}`
-            **Quantity:** `{quantity}`  
-            **Order Value:** `₹{quantity * ltp}`  
-            **Price:** `₹{ltp}`  
-            **AMO:** `{is_amo}`
-            """)
-
     try:
         data = {
             "exchange": "NSE_EQ",
@@ -157,11 +147,12 @@ def buy(instrument_key, ltp):
         # Display order details
         st.subheader("🛒 Buy Order details")
         st.markdown(f"""
-                        **Instrument Token:** `{"GOLDBEES"}`    
+                        **Instrument Token:** `{instrument_key}`    
                         **Quantity:** `{quantity}`
                         **Order Type:** `{variety}`
                         **Order Value:** `₹{quantity * ltp}`  
                         **Price:** `₹{ltp}`
+                        **AMO:** `{is_amo}`
                         """)
 
         api_response = make_api_request(token, "POST", data=data)
@@ -355,7 +346,6 @@ else:
             token = token_resp["data"]["access_token"]
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
-            st.info("get symbol from key : " + str(symbol_to_key.get(757781)))
             last_trading_price = get_ltp()
             portfolio = client.holdings()
             st.info("portfolio : " + str(portfolio))
