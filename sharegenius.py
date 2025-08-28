@@ -51,8 +51,10 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
 
+    st.info("hist : " + str(hist))
     closes = hist['c']
     close_rev = closes[::-1]
+    st.info("close_rev : " + str(close_rev[:n]))
     return close_rev[:n] if len(close_rev) >= n else []
 
 def get_ltp():
