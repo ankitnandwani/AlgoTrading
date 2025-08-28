@@ -207,7 +207,7 @@ def get_current_portfolio():
     existing_holds = {item["nse"]["token"] for item in portfolio["data"]}
 
     executed_ordr_tokens = {
-        order["instrument_token"]
+        order["token"]
         #order.instrument_token
         for order in existing_orders.get("orders", [])
         if order.get("status") == "EXECUTED"
