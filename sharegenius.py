@@ -51,10 +51,10 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
 
-    st.info("hist : " + str(hist))
+    #st.info("hist : " + str(hist))
     closes = hist['c']
     close_rev = closes[::-1]
-    st.info("close_rev : " + str(close_rev[:n]))
+    #st.info("close_rev : " + str(close_rev[:n]))
     return close_rev[:n] if len(close_rev) >= n else []
 
 def get_ltp():
@@ -204,20 +204,22 @@ def sell(instrument_key, ltp):
 
 
 def get_current_portfolio(top3stocks):
-    existing_holdings = {item.instrument_token for item in portfolio.data}
-    existing_orders = order_apiv1.get_order_book(api_version=api_version)
+    existing_holdings = {item["nse"]["token"] for item in portfolio["data"]}
+    st.info("existing_holdings : " + str(existing_holdings))
+
     executed_order_tokens = {
-        order.instrument_token
-        for order in existing_orders.data
-        if order.status in {"complete"}  # relevant open statuses
+        order["instrument_token"]
+        #order.instrument_token
+        for order in existing_orders.get("orders", [])
+        if order.get("status") == "COMPLETE"
     }
     for _, row in top3stocks.iterrows():
-        token = row['Instrument_token']
+        instrument_token = row['Instrument_token']
         symbol = row['Symbol']
 
-        if token in existing_holdings:
+        if instrument_token in existing_holdings:
             st.info(f"Already holding: {row['Symbol']}")
-        elif token in executed_order_tokens:
+        elif instrument_token in executed_order_tokens:
             st.info(f"Order already placed for: {symbol}")
         else:
             st.info(f"Buying new ETF: {row['Symbol']}")
@@ -337,6 +339,9 @@ else:
             price = get_ltp()
             portfolio = client.holdings()
             st.info("portfolio : " + str(portfolio))
+            existing_orders = client.orders(limit=50, offset=1)
+            st.info("existing_orders : " + str(existing_orders))
+
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
@@ -376,7 +381,6 @@ else:
             order_api = upstox_client.OrderApiV3(api_client)
             order_apiv1 = upstox_client.OrderApi(api_client)
             api_version = '2.0'
-            portfolio = portfolio_api.get_holdings(api_version)
 
 
             # Global injection for helper functions
@@ -386,6 +390,7 @@ else:
                 "portfolio_api": portfolio_api,
                 "order_api": order_api,
                 "api_version": api_version,
+                "portfolio": portfolio
             })
 
         except Exception as e:
