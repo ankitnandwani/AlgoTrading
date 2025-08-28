@@ -134,7 +134,7 @@ def buy(instrument_key, ltp):
             "exchange": "NSE_EQ",
             "token": instrument_key,
             "transaction_type": "BUY",
-            "product": "DELIVERY",
+            "product": Constants.ProductTypes.MTF,
             "variety": variety,
             "quantity": quantity,
             "price": ltp,
@@ -235,6 +235,9 @@ def filter_top3_in_holdings(top3stocks):
         else:
             st.info(f"Buying new ETF: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
+            return True
+
+    return False
 
 def getOrderHistory():
     today = datetime.now(UTC).date()
@@ -315,6 +318,10 @@ def averaging():
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
+    if bought_etf:
+        st.info("Buy order already placed, skipping averaging")
+        return
+
     best_candidate = min(candidates, key=lambda x: x["deviation"])
     buy(best_candidate['instrument_token'], best_candidate['ltp'])
     st.success(f"Averaged: {best_candidate['symbol']} @ Deviation {best_candidate['deviation']:.2f}%")
@@ -359,7 +366,7 @@ else:
             if not etf3.empty:
                 st.subheader("📈 Top 3 ETF Below MA20")
                 st.dataframe(etf3)
-                filter_top3_in_holdings(etf3)
+                bought_etf = filter_top3_in_holdings(etf3)
             else:
                 st.info("No qualifying ETF found.")
 
@@ -368,7 +375,7 @@ else:
             if not jewel3.empty:
                 st.subheader("📈 Top 3 Jewelry Below MA20")
                 st.dataframe(jewel3)
-
+                bought_jewel = filter_top3_in_holdings(etf3)
             else:
                 st.info("No qualifying Jewelry found.")
 
@@ -377,7 +384,7 @@ else:
             if not nifty3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
                 st.dataframe(nifty3)
-
+                bought_nifty = filter_top3_in_holdings(etf3)
             else:
                 st.info("No qualifying Stocks found.")
 
