@@ -82,7 +82,7 @@ def compute_top5_nifty_below_ma():
     return all_df, below35_df
 
 
-def buy(instrument_key, ltp):
+def buy(instrument_key, ltp, is_buy_placed):
     # Get current IST time
     now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
     market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
@@ -120,6 +120,7 @@ def buy(instrument_key, ltp):
                                                  trigger_price=0.0, is_amo=is_amo, slice=True)
         api_response = order_api.place_order(body)
         st.success(f"✅ Buy order placed successfully: {api_response}")
+        is_buy_placed = True
     except ApiException as e:
         st.error(f"❌ Failed to place order: {e}")
 
@@ -174,7 +175,7 @@ def sell(instrument_key, ltp):
 
 
 
-def get_current_portfolio(top5stocks):
+def get_current_portfolio(top5stocks, is_buy_placed):
     existing_holdings = {item.instrument_token for item in portfolio.data}
     existing_orders = order_apiv1.get_order_book(api_version=api_version)
     executed_order_tokens = {
@@ -192,8 +193,7 @@ def get_current_portfolio(top5stocks):
             st.info(f"Order already placed for: {symbol}")
         else:
             st.info(f"Buying new stock: {row['Symbol']}")
-            buy(row['Instrument_token'], row['LTP'])
-            st.stop()
+            buy(row['Instrument_token'], row['LTP'], is_buy_placed)
 
 def getOrderHistory():
     today = datetime.now(UTC).date()
@@ -231,7 +231,7 @@ def getOrderHistory():
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def averaging():
+def averaging(is_buy_placed):
     order_summary = getOrderHistory()
 
     candidates = []
@@ -274,6 +274,10 @@ def averaging():
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
+    if is_buy_placed:
+        st.info("Buy order already placed, skipping averaging")
+        return
+
     candidates.sort(key=lambda x: x["deviation"])
 
     for stock in candidates:
@@ -300,12 +304,13 @@ run = st.button("🚀 Run Analysis and buy")
 
 if run:
     try:
+        exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "INDIGO", "SWIGGY"}
         nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
         nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
-        nifty50_list = [symbol for symbol in nifty50_list if symbol != 'NIFTY 50']
+        nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
         nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
         nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
-        nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol != 'NIFTY NEXT 50']
+        nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
         nifty50_list = nifty50_list + nifty_next50_list
         st.info("nifty100_list : " + str(nifty50_list))
 
@@ -322,6 +327,7 @@ if run:
         order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
         portfolio = portfolio_api.get_holdings(api_version)
+        is_buy_done = False
 
         # Global injection for helper functions
         globals().update({
@@ -339,12 +345,12 @@ if run:
         if not rsi_below35.empty:
             st.subheader("📈 Stocks Below 35 RSI")
             st.dataframe(rsi_below35)
-            get_current_portfolio(rsi_below35)
+            get_current_portfolio(rsi_below35, is_buy_done)
         else:
             st.info("No qualifying stocks found.")
 
         getOrderHistory()
-        averaging()
+        averaging(is_buy_done)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
