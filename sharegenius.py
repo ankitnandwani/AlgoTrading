@@ -247,9 +247,13 @@ def averaging():
     candidates = []
 
     nse_data = portfolio["data"].get("nse")
+    st.info("nse_data : " + str(nse_data))
     for item in nse_data:
+        st.info("item : " + str(item))
         avg_buy_price = item.get("average_price")
+        st.info("avg_buy_price : " + str(avg_buy_price))
         instrument_key = item.get("token")
+        st.info("instrument_key : " + str(instrument_key))
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
         st.info(
@@ -309,7 +313,6 @@ else:
             portfolio = client.holdings()
             st.info("portfolio : " + str(portfolio))
             existing_orders = client.orders(limit=50, offset=1)
-            st.info("existing_orders : " + str(existing_orders))
             existing_holdings, executed_order_tokens = get_current_portfolio()
             st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(executed_order_tokens))
 
