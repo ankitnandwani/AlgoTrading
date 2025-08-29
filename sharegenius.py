@@ -372,7 +372,7 @@ else:
             if not jewel3.empty:
                 st.subheader("📈 Top 3 Jewelry Below MA20")
                 st.dataframe(jewel3)
-                bought_jewel = filter_top3_in_holdings(etf3)
+                bought_jewel = filter_top3_in_holdings(jewel3)
             else:
                 st.info("No qualifying Jewelry found.")
 
@@ -381,9 +381,12 @@ else:
             if not nifty3.empty:
                 st.subheader("📈 Top 3 Stocks Below MA20")
                 st.dataframe(nifty3)
-                bought_nifty = filter_top3_in_holdings(etf3)
+                bought_nifty = filter_top3_in_holdings(nifty3)
             else:
                 st.info("No qualifying Stocks found.")
+
+            averaging()
+
 
             config = upstox_client.Configuration()
             api_client = upstox_client.ApiClient(config)
