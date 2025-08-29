@@ -246,7 +246,8 @@ def filter_top3_in_holdings(top3stocks):
 def averaging():
     candidates = []
 
-    nse_data = portfolio["data"].get("nse")
+    st.info("Starting averaging")
+    nse_data = portfolio["data"]#.get("nse")
     st.info("nse_data : " + str(nse_data))
     for item in nse_data:
         st.info("item : " + str(item))
@@ -274,9 +275,9 @@ def averaging():
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
-    if bought_etf:
-        st.info("Buy order already placed, skipping averaging")
-        return
+    # if bought_etf:
+    #     st.info("Buy order already placed, skipping averaging")
+    #     return
 
     best_candidate = min(candidates, key=lambda x: x["deviation"])
     buy(best_candidate['instrument_token'], best_candidate['ltp'])
@@ -317,31 +318,31 @@ else:
             st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(executed_order_tokens))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
-            etf3 = compute_top3(etf)
-            if not etf3.empty:
-                st.subheader("📈 Top 3 ETF Below MA20")
-                st.dataframe(etf3)
-                bought_etf = filter_top3_in_holdings(etf3)
-            else:
-                st.info("No qualifying ETF found.")
-
-            st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
-            jewel3 = compute_top3(jewel)
-            if not jewel3.empty:
-                st.subheader("📈 Top 3 Jewelry Below MA20")
-                st.dataframe(jewel3)
-                bought_jewel = filter_top3_in_holdings(jewel3)
-            else:
-                st.info("No qualifying Jewelry found.")
-
-            st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
-            nifty3 = compute_top3(nifty)
-            if not nifty3.empty:
-                st.subheader("📈 Top 3 Stocks Below MA20")
-                st.dataframe(nifty3)
-                bought_nifty = filter_top3_in_holdings(nifty3)
-            else:
-                st.info("No qualifying Stocks found.")
+            # etf3 = compute_top3(etf)
+            # if not etf3.empty:
+            #     st.subheader("📈 Top 3 ETF Below MA20")
+            #     st.dataframe(etf3)
+            #     bought_etf = filter_top3_in_holdings(etf3)
+            # else:
+            #     st.info("No qualifying ETF found.")
+            #
+            # st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
+            # jewel3 = compute_top3(jewel)
+            # if not jewel3.empty:
+            #     st.subheader("📈 Top 3 Jewelry Below MA20")
+            #     st.dataframe(jewel3)
+            #     bought_jewel = filter_top3_in_holdings(jewel3)
+            # else:
+            #     st.info("No qualifying Jewelry found.")
+            #
+            # st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
+            # nifty3 = compute_top3(nifty)
+            # if not nifty3.empty:
+            #     st.subheader("📈 Top 3 Stocks Below MA20")
+            #     st.dataframe(nifty3)
+            #     bought_nifty = filter_top3_in_holdings(nifty3)
+            # else:
+            #     st.info("No qualifying Stocks found.")
 
             averaging()
 
