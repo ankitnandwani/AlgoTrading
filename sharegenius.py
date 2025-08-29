@@ -134,7 +134,7 @@ def buy(instrument_key, ltp):
             "exchange": "NSE_EQ",
             "token": instrument_key,
             "transaction_type": "BUY",
-            "product": Constants.ProductTypes.MTF,
+            "product": Constants.ProductTypes.DELIVERY,
             "variety": variety,
             "quantity": quantity,
             "price": ltp,
@@ -176,13 +176,16 @@ def sell(instrument_key, ltp):
         price = ltp
         is_amo = True
 
-    quantity=0
-    for item in portfolio.data:
-        if item.tradingsymbol not in etf:
+    quantity = 0
+
+    for item in portfolio["data"]:
+        nse_data = item.get("nse")
+
+        if not nse_data:
             continue
 
-        if item.instrument_token == instrument_key:
-            quantity = item.quantity
+        if nse_data.get("exchange") == "NSE_EQ" and nse_data.get("token") == instrument_key:
+            quantity = item.get("total_free", 0)
             break
 
 
@@ -199,11 +202,10 @@ def sell(instrument_key, ltp):
             """)
 
     try:
-        body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
-                                                 price=price, tag="penny_etf", instrument_token=instrument_key,
-                                                 order_type=order_type, transaction_type="SELL",
-                                                 disclosed_quantity=0,
-                                     trigger_price=0.0, is_amo=is_amo, slice=True)
+        body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key, transaction_type=Constants.TransactionSides.SELL,
+                                                 product=Constants.ProductTypes.DELIVERY, variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
+                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.AFTER_MARKET)
+        st.info("body : " + str(body))
         api_response = order_api.place_order(body)
         st.success(f"✅ Sell order placed successfully: {api_response}")
     except ApiException as e:
@@ -279,40 +281,35 @@ def averaging():
 
     candidates = []
 
-    for item in portfolio.data:
-        if item.tradingsymbol not in etf:
+    for item in portfolio["data"]:
+        nse_data = item.get("nse")
+
+        if not nse_data:
             continue
 
-        info = order_summary.get(item.tradingsymbol)
-        last_buy_price = float(info.get("last_buy_price", 0) or 0)
-        order_count = info.get("buy_count", 0)
+        if nse_data.get("exchange") == "NSE_EQ" and nse_data.get("token") == instrument_key:
+            quantity = item.get("total_free", 0)
+            break
 
-        # Skip if quantity is 0 or avg price is 0
-        if item.quantity == 0 or not last_buy_price:
-            continue
-
-        try:
-            # Fetch the current LTP from market API
-            current_price = get_ltp(item.instrument_token, item.tradingsymbol)
-        except Exception as e:
-            st.warning(f"Failed to fetch LTP for {item.trading_symbol}: {e}")
-            continue
-
-        deviation = ((current_price - last_buy_price) / last_buy_price) * 100
+    nse_data = portfolio["data"].get("nse")
+    for item in nse_data:
+        avg_buy_price = item.get("average_price")
+        instrument_key = item.get("token")
+        ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
+        deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
         st.info(
-            item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
+            item.get("symbol") + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {avg_buy_price})")
 
         if deviation < -3.14:
             candidates.append({
                 "instrument_token": item.instrument_token,
-                "ltp": current_price,
+                "ltp": ltp,
                 "symbol": item.trading_symbol,
-                "deviation": deviation,
-                "order_count": order_count
+                "deviation": deviation
             })
 
-        if deviation > 6.28:
-            sell(item.instrument_token, current_price)
+        #if deviation > 6.28:
+        sell(item.instrument_token, ltp)
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
