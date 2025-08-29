@@ -202,7 +202,7 @@ def sell(instrument_key, ltp):
     try:
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key, transaction_type=Constants.TransactionSides.SELL,
                                                  product=Constants.ProductTypes.DELIVERY, variety=variety, quantity=quantity,
-                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=validity)
+                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.AFTER_MARKET)
         if body.get("status") == "success":
             st.success(f"✅ Order placed successfully")
         else:
