@@ -168,13 +168,11 @@ def sell(instrument_key, ltp):
 
     # Determine order type and AMO status based on current time
     if now_ist < market_close_time:
-        order_type = "MARKET"
-        price = 0.0
-        is_amo = False
+        variety = Constants.VarietyTypes.REGULAR_MARKET_ORDER
+        validity=Constants.ValidityTypes.FULL_DAY
     else:
-        order_type = "LIMIT"
-        price = ltp
-        is_amo = True
+        variety = Constants.VarietyTypes.REGULAR_LIMIT_ORDER
+        validity = Constants.ValidityTypes.AFTER_MARKET
 
     quantity = 0
 
@@ -194,20 +192,21 @@ def sell(instrument_key, ltp):
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`  
-            **Order Type:** `{order_type}`  
-            **Price:** `₹{price}`
-            **Quantity:** `₹{quantity}`
+            **Order Type:** `{variety}`  
+            **Price:** `₹{ltp}`
+            **Quantity:** `{quantity}`
             **Order Value:** `₹{quantity * ltp}`
-            **AMO:** `{is_amo}`
+            **Validity:** `{validity}`
             """)
 
     try:
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key, transaction_type=Constants.TransactionSides.SELL,
-                                                 product=Constants.ProductTypes.DELIVERY, variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
-                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.AFTER_MARKET)
-        st.info("body : " + str(body))
-        api_response = order_api.place_order(body)
-        st.success(f"✅ Sell order placed successfully: {api_response}")
+                                                 product=Constants.ProductTypes.DELIVERY, variety=variety, quantity=quantity,
+                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=validity)
+        if body.get("status") == "success":
+            st.success(f"✅ Order placed successfully")
+        else:
+            st.error("❌ Order placement failed!")
     except ApiException as e:
         st.error(f"❌ Failed to place order: {e}")
 
@@ -245,27 +244,16 @@ def filter_top3_in_holdings(top3stocks):
 # so we will average our worst performer from the list with cmp
 def averaging():
     candidates = []
-    nse_data = {}
 
-    st.info("Starting averaging")
     for holding in portfolio["data"]:
         nse_data = holding["nse"]
-        print(holding["isin"], nse_data["symbol"], nse_data["token"])
-
-    st.info("nse_data : " + str(nse_data))
-    for holding in portfolio["data"]:
-        nse_data = holding["nse"]
-        st.info("nse_data : " + str(nse_data))
         avg_buy_price = holding.get("average_price")
-        st.info("avg_buy_price : " + str(avg_buy_price))
         instrument_key = nse_data.get("token")
-        st.info("instrument_key : " + str(instrument_key))
         symbol = nse_data.get("symbol")
-        st.info("symbol : " + str(symbol))
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
         st.info(
-            symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {avg_buy_price})")
+            symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price})")
 
         if deviation < -3.14:
             candidates.append({
