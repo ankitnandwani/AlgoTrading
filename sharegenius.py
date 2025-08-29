@@ -241,44 +241,9 @@ def filter_top3_in_holdings(top3stocks):
 
     return False
 
-def getOrderHistory():
-    today = datetime.now(UTC).date()
-    one_year_ago = today - timedelta(days=365)
-
-    start_date = one_year_ago.strftime("%Y-%m-%d")
-    end_date = today.strftime("%Y-%m-%d")
-    param = {
-        'segment': "EQ"
-    }
-
-    order_summary = {}
-
-    try:
-        api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
-        orders = getattr(api_response, "data", []) or []
-        buy_orders = [o for o in orders if o.transaction_type == "BUY"]
-        for order in buy_orders:
-            symbol = order.symbol
-            if symbol not in etf:
-                continue
-            if symbol not in order_summary:
-                order_summary[symbol] = {
-                    "last_buy_price": float(order.price),
-                    "buy_count": 1
-                }
-            else:
-                order_summary[symbol]["buy_count"] += 1
-
-    except ApiException as e:
-        st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
-
-    return order_summary
-
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def averaging():
-    order_summary = getOrderHistory()
-
     candidates = []
 
     nse_data = portfolio["data"].get("nse")
