@@ -1,18 +1,13 @@
-import csv
 import datetime
 import math
 
 import gspread
 import pandas as pd
-import upstox_client
-from upstox_client.rest import ApiException
 import json
 from datetime import datetime, timedelta, UTC, timezone
 import streamlit as st
 from google.oauth2.service_account import Credentials
 from vortex_api import VortexAPI, Constants
-
-from goldbees_etf import make_api_request
 
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
 
@@ -53,10 +48,10 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
 
-    #st.info("hist : " + str(hist))
+    st.info("hist : " + str(hist))
     closes = hist['c']
     close_rev = closes[::-1]
-    #st.info("close_rev : " + str(close_rev[:n]))
+    st.info("close_rev : " + str(close_rev[:n]))
     return close_rev[:n] if len(close_rev) >= n else []
 
 def get_ltp():
@@ -104,7 +99,7 @@ def compute_top3(shop):
             ma20 = (sum(closes)) / 20
             dev = ((ltp - ma20) / ma20) * 100
             results.append((sym, ltp, ma20, dev, instrument_key))
-        except ApiException as e:
+        except Exception as e:
             st.warning(f"{sym} error: {e}")
 
     df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
@@ -114,66 +109,34 @@ def compute_top3(shop):
 
 
 def buy(instrument_key, ltp):
-    # Get current IST time
-    now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
-    market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
-
-    # Determine order type and AMO status based on current time
-    if now_ist < market_close_time:
-        variety = Constants.VarietyTypes.REGULAR_MARKET_ORDER
-        is_amo = False
-    else:
-        variety = Constants.VarietyTypes.REGULAR_LIMIT_ORDER
-        is_amo = True
-
     min_investment = 10000
     quantity = max(1, math.ceil((min_investment / ltp)*2))
 
+    # Display order details
+    st.subheader("🛒 Buy Order details")
+    st.markdown(f"""
+                            **Instrument Token:** `{instrument_key}`    
+                            **Quantity:** `{quantity}`
+                            **Order Value:** `₹{quantity * ltp}`  
+                            **Price:** `₹{ltp}`
+                            """)
+
     try:
-        data = {
-            "exchange": "NSE_EQ",
-            "token": instrument_key,
-            "transaction_type": "BUY",
-            "product": Constants.ProductTypes.DELIVERY,
-            "variety": variety,
-            "quantity": quantity,
-            "price": ltp,
-            "trigger_price": 0.0,
-            "disclosed_quantity": 0,
-            "validity": "DAY",
-            "is_amo": True
-        }
-
-        # Display order details
-        st.subheader("🛒 Buy Order details")
-        st.markdown(f"""
-                        **Instrument Token:** `{instrument_key}`    
-                        **Quantity:** `{quantity}`
-                        **Order Type:** `{variety}`
-                        **Order Value:** `₹{quantity * ltp}`  
-                        **Price:** `₹{ltp}`
-                        **AMO:** `{is_amo}`
-                        """)
-
-        api_response = make_api_request(token, "POST", data=data)
-        st.success(f"✅ Buy order placed successfully: {api_response}")
-    except ApiException as e:
+        body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key,
+                                  transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
+                                  variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
+                                  price=ltp, trigger_price=0.0, disclosed_quantity=0,
+                                  validity=Constants.ValidityTypes.FULL_DAY)
+        st.info("order details : " + str(body))
+        if body.get("status") == "success":
+            st.success(f"✅ Order placed successfully")
+        else:
+            st.error("❌ Order placement failed!")
+    except Exception as e:
         st.error(f"❌ Failed to place order: {e}")
 
 
 def sell(instrument_key, ltp):
-    # Get current IST time
-    now_ist = datetime.now(UTC).astimezone(timezone(timedelta(hours=5, minutes=30)))
-    market_close_time = now_ist.replace(hour=15, minute=30, second=0, microsecond=0)
-
-    # Determine order type and AMO status based on current time
-    if now_ist < market_close_time:
-        variety = Constants.VarietyTypes.REGULAR_MARKET_ORDER
-        validity=Constants.ValidityTypes.FULL_DAY
-    else:
-        variety = Constants.VarietyTypes.REGULAR_LIMIT_ORDER
-        validity = Constants.ValidityTypes.AFTER_MARKET
-
     quantity = 0
 
     for item in portfolio["data"]:
@@ -191,25 +154,22 @@ def sell(instrument_key, ltp):
     st.subheader("🛒 Sell Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
-            **LTP:** `₹{ltp}`  
-            **Order Type:** `{variety}`  
-            **Price:** `₹{ltp}`
+            **LTP:** `₹{ltp}`
             **Quantity:** `{quantity}`
             **Order Value:** `₹{quantity * ltp}`
-            **Validity:** `{validity}`
             """)
 
     try:
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key, transaction_type=Constants.TransactionSides.SELL,
-                                                 product=Constants.ProductTypes.DELIVERY, variety=variety, quantity=quantity,
-                                                 price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.AFTER_MARKET)
+                                                product=Constants.ProductTypes.MTF, variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
+                                                price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.FULL_DAY)
+        st.info("order details : " + str(body))
         if body.get("status") == "success":
             st.success(f"✅ Order placed successfully")
         else:
             st.error("❌ Order placement failed!")
-    except ApiException as e:
+    except Exception as e:
         st.error(f"❌ Failed to place order: {e}")
-
 
 
 def get_current_portfolio():
@@ -217,7 +177,6 @@ def get_current_portfolio():
 
     executed_ordr_tokens = {
         order["token"]
-        #order.instrument_token
         for order in existing_orders.get("orders", [])
         if order.get("status") == "EXECUTED"
     }
@@ -263,16 +222,16 @@ def averaging():
                 "deviation": deviation
             })
 
-        #if deviation > 6.28:
-        sell(instrument_key, ltp)
+        if deviation > 6.28:
+            sell(instrument_key, ltp)
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
-    # if bought_etf:
-    #     st.info("Buy order already placed, skipping averaging")
-    #     return
+    if bought_etf:
+        st.info("Buy order already placed, skipping averaging")
+        return
 
     best_candidate = min(candidates, key=lambda x: x["deviation"])
     buy(best_candidate['instrument_token'], best_candidate['ltp'])
@@ -313,57 +272,32 @@ else:
             st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(executed_order_tokens))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
-            # etf3 = compute_top3(etf)
-            # if not etf3.empty:
-            #     st.subheader("📈 Top 3 ETF Below MA20")
-            #     st.dataframe(etf3)
-            #     bought_etf = filter_top3_in_holdings(etf3)
-            # else:
-            #     st.info("No qualifying ETF found.")
-            #
-            # st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
-            # jewel3 = compute_top3(jewel)
-            # if not jewel3.empty:
-            #     st.subheader("📈 Top 3 Jewelry Below MA20")
-            #     st.dataframe(jewel3)
-            #     bought_jewel = filter_top3_in_holdings(jewel3)
-            # else:
-            #     st.info("No qualifying Jewelry found.")
-            #
-            # st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
-            # nifty3 = compute_top3(nifty)
-            # if not nifty3.empty:
-            #     st.subheader("📈 Top 3 Stocks Below MA20")
-            #     st.dataframe(nifty3)
-            #     bought_nifty = filter_top3_in_holdings(nifty3)
-            # else:
-            #     st.info("No qualifying Stocks found.")
+            etf3 = compute_top3(etf)
+            if not etf3.empty:
+                st.subheader("📈 Top 3 ETF Below MA20")
+                st.dataframe(etf3)
+                bought_etf = filter_top3_in_holdings(etf3)
+            else:
+                st.info("No qualifying ETF found.")
+
+            st.info("Jewelery SHOP : " + str(jewel) + " count : " + str(len(jewel)))
+            jewel3 = compute_top3(jewel)
+            if not jewel3.empty:
+                st.subheader("📈 Top 3 Jewelry Below MA20")
+                st.dataframe(jewel3)
+                bought_jewel = filter_top3_in_holdings(jewel3)
+            else:
+                st.info("No qualifying Jewelry found.")
+
+            st.info("Nifty SHOP : " + str(nifty) + " count : " + str(len(nifty)))
+            nifty3 = compute_top3(nifty)
+            if not nifty3.empty:
+                st.subheader("📈 Top 3 Stocks Below MA20")
+                st.dataframe(nifty3)
+                bought_nifty = filter_top3_in_holdings(nifty3)
+            else:
+                st.info("No qualifying Stocks found.")
 
             averaging()
-
-
-            config = upstox_client.Configuration()
-            api_client = upstox_client.ApiClient(config)
-
-            login_api = upstox_client.LoginApi(api_client)
-            history_api = upstox_client.HistoryV3Api(api_client)
-            quote_api = upstox_client.MarketQuoteV3Api(api_client)
-            portfolio_api = upstox_client.PortfolioApi(api_client)
-            post_trade_api = upstox_client.PostTradeApi(api_client)
-            order_api = upstox_client.OrderApiV3(api_client)
-            order_apiv1 = upstox_client.OrderApi(api_client)
-            api_version = '2.0'
-
-
-            # Global injection for helper functions
-            globals().update({
-                "history_api": history_api,
-                "quote_api": quote_api,
-                "portfolio_api": portfolio_api,
-                "order_api": order_api,
-                "api_version": api_version,
-                "portfolio": portfolio
-            })
-
         except Exception as e:
             st.error(f"Something went wrong: {e}")
