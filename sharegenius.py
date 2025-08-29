@@ -245,31 +245,38 @@ def filter_top3_in_holdings(top3stocks):
 # so we will average our worst performer from the list with cmp
 def averaging():
     candidates = []
+    nse_data = {}
 
     st.info("Starting averaging")
-    nse_data = portfolio["data"].get("nse")
+    for holding in portfolio["data"]:
+        nse_data = holding["nse"]
+        print(holding["isin"], nse_data["symbol"], nse_data["token"])
+
     st.info("nse_data : " + str(nse_data))
-    for item in nse_data:
-        st.info("item : " + str(item))
-        avg_buy_price = item.get("average_price")
+    for holding in portfolio["data"]:
+        nse_data = holding["nse"]
+        st.info("nse_data : " + str(nse_data))
+        avg_buy_price = holding.get("average_price")
         st.info("avg_buy_price : " + str(avg_buy_price))
-        instrument_key = item.get("token")
+        instrument_key = nse_data.get("token")
         st.info("instrument_key : " + str(instrument_key))
+        symbol = nse_data.get("symbol")
+        st.info("symbol : " + str(symbol))
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
         st.info(
-            item.get("symbol") + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {avg_buy_price})")
+            symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {avg_buy_price})")
 
         if deviation < -3.14:
             candidates.append({
-                "instrument_token": item.instrument_token,
+                "instrument_token": instrument_key,
                 "ltp": ltp,
-                "symbol": item.trading_symbol,
+                "symbol": symbol,
                 "deviation": deviation
             })
 
         #if deviation > 6.28:
-        sell(item.instrument_token, ltp)
+        sell(instrument_key, ltp)
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
