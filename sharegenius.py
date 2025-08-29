@@ -247,7 +247,7 @@ def averaging():
     candidates = []
 
     st.info("Starting averaging")
-    nse_data = portfolio["data"]#.get("nse")
+    nse_data = portfolio["data"].get("nse")
     st.info("nse_data : " + str(nse_data))
     for item in nse_data:
         st.info("item : " + str(item))
