@@ -281,16 +281,6 @@ def averaging():
 
     candidates = []
 
-    for item in portfolio["data"]:
-        nse_data = item.get("nse")
-
-        if not nse_data:
-            continue
-
-        if nse_data.get("exchange") == "NSE_EQ" and nse_data.get("token") == instrument_key:
-            quantity = item.get("total_free", 0)
-            break
-
     nse_data = portfolio["data"].get("nse")
     for item in nse_data:
         avg_buy_price = item.get("average_price")
