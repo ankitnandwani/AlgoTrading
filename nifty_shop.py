@@ -105,7 +105,7 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
     else:
         df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
         df = df.sort_values("Deviation%")
-        return df, df
+        return df, df.head(2)
 
 
 def buy(instrument_key, ltp):
@@ -241,7 +241,6 @@ def get_order_history():
     except ApiException as e:
         st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
 
-    st.info("order_summ : " + str(order_summ))
     return order_summ
 
 
@@ -344,7 +343,6 @@ if run:
         portfolio = portfolio_api.get_holdings(api_version)
         existing_orders = order_apiv1.get_order_book(api_version=api_version)
         order_summary = get_order_history()
-        st.info("order_summary : " + str(order_summary))
         symbol_to_key = load_symbol_to_instrument_key_map()
         last_trading_price = get_ltp()
 
