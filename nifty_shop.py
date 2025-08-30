@@ -43,7 +43,6 @@ def get_ltp():
         if symbol in symbol_to_key  # ensure symbol exists in mapping
     ]
 
-    st.info("instrument_tokens : " + str(instrument_tokens))
     instrument_key_str = ",".join(instrument_tokens)
     st.info("instrument_key_str : " + str(instrument_key_str))
     response = quote_api.get_ltp(instrument_key=instrument_key_str)
@@ -53,7 +52,7 @@ def get_ltp():
 
     for key in all_products:
         sym = 'NSE_EQ:' + key
-        if sym in response.data[sym]:  # check if key exists in response
+        if sym in response.data:  # check if key exists in response
             last_trade_prices[sym] = response.data[sym].last_price
 
     return last_trade_prices
