@@ -45,6 +45,7 @@ def get_ltp():
 
     response = quote_api.get_ltp(instrument_key=instrument_tokens)
 
+    st.info("response : " + str(response))
     last_trade_prices = {}
 
     for key in all_products:
@@ -325,6 +326,7 @@ if run:
         nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
         nifty100_list = nifty50_list + nifty_next50_list
         st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
+        penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
 
         config = upstox_client.Configuration()
         config.access_token = access_token
@@ -343,6 +345,7 @@ if run:
         order_summary = get_order_history()
         symbol_to_key = load_symbol_to_instrument_key_map()
         last_trading_price = get_ltp()
+        st.info("Last trading price : " + str(last_trading_price))
 
         # Global injection for helper functions
         globals().update({
@@ -369,7 +372,6 @@ if run:
         averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
 
         is_rsi_algo = False
-        penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
         st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
         all_rsi, top5 = compute_top5_nifty_below_ma(is_rsi_algo, penny_etf_list)
         is_etf_buy_done = False
