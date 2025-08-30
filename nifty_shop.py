@@ -36,7 +36,6 @@ def get_last_n_closes(instrument_key, n=99, days_buffer=200):
 
 # 🛠 Helper: Get live LTP
 def get_ltp():
-    all_products = nifty100_list + penny_etf_list
     instrument_tokens = [
         symbol_to_key.get(symbol)
         for symbol in all_products
@@ -230,7 +229,8 @@ def get_order_history():
         buy_orders = [o for o in orders if o.transaction_type == "BUY"]
         for order in buy_orders:
             symbol = order.symbol
-            if symbol not in nifty50_list:
+            st.info("symbol : " + str(symbol))
+            if symbol not in all_products:
                 continue
             if symbol not in order_summ:
                 order_summ[symbol] = {
@@ -331,6 +331,7 @@ if run:
         nifty100_list = nifty50_list + nifty_next50_list
         st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
         penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
+        all_products = nifty100_list + penny_etf_list
 
         config = upstox_client.Configuration()
         config.access_token = access_token
