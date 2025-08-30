@@ -24,7 +24,7 @@ def get_rsi_upstox(closes):
 
 
 # 🛠 Helper: Get historical closes
-def get_last_n_closes(instrument_key, n=99, days_buffer=200):
+def get_last_n_closes(instrument_key, n, days_buffer):
     to_date = datetime.now(UTC).strftime("%Y-%m-%d")
     from_date = (datetime.now(UTC) - timedelta(days=days_buffer)).strftime("%Y-%m-%d")
     resp = history_api.get_historical_candle_data1(instrument_key=instrument_key, unit="days", interval=1,
@@ -86,11 +86,11 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
 
             ltp = last_trading_price["NSE_EQ:" + str(sym)]
             if is_rsi:
-                closes = get_last_n_closes(instrument_key)
+                closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
                 rsi = get_rsi_upstox(closes)
                 results.append((sym, ltp, rsi, instrument_key))
             else:
-                closes = get_last_n_closes(instrument_key)
+                closes = get_last_n_closes(instrument_key=instrument_key, n=20, days_buffer=60)
                 ma20 = (sum(closes)) / 20
                 dev = ((ltp - ma20) / ma20) * 100
                 results.append((sym, ltp, ma20, dev, instrument_key))
@@ -224,12 +224,10 @@ def get_order_history():
 
     try:
         api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
-        st.info("api_response : " + str(api_response))
         orders = getattr(api_response, "data", []) or []
         buy_orders = [o for o in orders if o.transaction_type == "BUY"]
         for order in buy_orders:
             symbol = order.symbol
-            st.info("symbol : " + str(symbol))
             if symbol not in all_products:
                 continue
             if symbol not in order_summ:
@@ -256,9 +254,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
         if item.tradingsymbol not in stock_list:
             continue
 
-        st.info("item : " + str(item))
         info = order_summary.get(item.tradingsymbol)
-        st.info("info : " + str(info))
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
         order_count = info.get("buy_count", 0)
 
