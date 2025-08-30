@@ -43,6 +43,8 @@ def get_ltp():
         if symbol in symbol_to_key  # ensure symbol exists in mapping
     ]
 
+    st.info("instrument_tokens : " + str(instrument_tokens))
+
     response = quote_api.get_ltp(instrument_key=instrument_tokens)
 
     st.info("response : " + str(response))
