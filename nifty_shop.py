@@ -91,12 +91,8 @@ def buy(instrument_key, ltp):
 
     # Determine order type and AMO status based on current time
     if now_ist < market_close_time:
-        order_type = "MARKET"
-        price = 0.0
         is_amo = False
     else:
-        order_type = "LIMIT"
-        price = ltp
         is_amo = True
 
     min_investment = 10000
@@ -106,18 +102,16 @@ def buy(instrument_key, ltp):
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
-            **LTP:** `₹{ltp}`  
-            **Order Type:** `{order_type}`  
+            **LTP:** `₹{ltp}` 
             **Quantity:** `{quantity}`  
             **Order Value:** `₹{quantity * ltp}`  
-            **Price:** `₹{price}`  
             **AMO:** `{is_amo}`
             """)
 
     try:
         body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
-                                                 price=price, tag="nifty_shop", instrument_token=instrument_key,
-                                                 order_type=order_type, transaction_type="BUY",
+                                                 price=ltp, tag="nifty_shop", instrument_token=instrument_key,
+                                                 order_type="LIMIT", transaction_type="BUY",
                                                  disclosed_quantity=0,
                                                  trigger_price=0.0, is_amo=is_amo, slice=True)
         api_response = order_api.place_order(body)
@@ -133,12 +127,8 @@ def sell(instrument_key, ltp):
 
     # Determine order type and AMO status based on current time
     if now_ist < market_close_time:
-        order_type = "MARKET"
-        price = 0.0
         is_amo = False
     else:
-        order_type = "LIMIT"
-        price = ltp
         is_amo = True
 
     quantity = 0
@@ -154,17 +144,15 @@ def sell(instrument_key, ltp):
     st.subheader("🛒 Sell Order details")
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
-            **LTP:** `₹{ltp}`  
-            **Order Type:** `{order_type}`  
-            **Price:** `₹{price}`
+            **LTP:** `₹{ltp}`
             **Quantity:** `₹{quantity}`
             **AMO:** `{is_amo}`
             """)
 
     try:
         body = upstox_client.PlaceOrderV3Request(quantity=quantity, product="D", validity="DAY",
-                                                 price=price, tag="nifty_shop", instrument_token=instrument_key,
-                                                 order_type=order_type, transaction_type="SELL",
+                                                 price=ltp, tag="nifty_shop", instrument_token=instrument_key,
+                                                 order_type="LIMIT", transaction_type="SELL",
                                                  disclosed_quantity=0,
                                                  trigger_price=0.0, is_amo=is_amo, slice=True)
         api_response = order_api.place_order(body)
