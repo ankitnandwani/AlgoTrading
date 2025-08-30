@@ -225,6 +225,7 @@ def get_order_history():
 
     try:
         api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
+        st.info("api_response : " + str(api_response))
         orders = getattr(api_response, "data", []) or []
         buy_orders = [o for o in orders if o.transaction_type == "BUY"]
         for order in buy_orders:
@@ -242,6 +243,7 @@ def get_order_history():
     except ApiException as e:
         st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
 
+    st.info("order_summ : " + str(order_summ))
     return order_summ
 
 
