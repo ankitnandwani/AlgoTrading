@@ -225,7 +225,6 @@ def get_order_history():
 
     try:
         api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
-        st.info("api_response : " + str(api_response))
         orders = getattr(api_response, "data", []) or []
         buy_orders = [o for o in orders if o.transaction_type == "BUY"]
         for order in buy_orders:
@@ -256,6 +255,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
         if item.tradingsymbol not in stock_list:
             continue
 
+        st.info("item : " + str(item))
         info = order_summary.get(item.tradingsymbol)
         st.info("info : " + str(info))
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
@@ -346,9 +346,9 @@ if run:
         portfolio = portfolio_api.get_holdings(api_version)
         existing_orders = order_apiv1.get_order_book(api_version=api_version)
         order_summary = get_order_history()
+        st.info("order_summary : " + str(order_summary))
         symbol_to_key = load_symbol_to_instrument_key_map()
         last_trading_price = get_ltp()
-        st.info("Last trading price : " + str(last_trading_price))
 
         # Global injection for helper functions
         globals().update({
