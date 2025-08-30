@@ -35,9 +35,24 @@ def get_last_n_closes(instrument_key, n=99, days_buffer=200):
 
 
 # 🛠 Helper: Get live LTP
-def get_ltp(instrument_key, sym):
-    response = quote_api.get_ltp(instrument_key=instrument_key)
-    return response.data['NSE_EQ:' + sym].last_price
+def get_ltp():
+    all_products = nifty100_list + penny_etf_list
+    instrument_tokens = [
+        symbol_to_key.get(symbol)
+        for symbol in all_products
+        if symbol in symbol_to_key  # ensure symbol exists in mapping
+    ]
+
+    response = quote_api.get_ltp(instrument_key=instrument_tokens)
+
+    last_trade_prices = {}
+
+    for key in all_products:
+        sym = 'NSE_EQ:' + key
+        if sym in response.data[sym]:  # check if key exists in response
+            last_trade_prices[sym] = response.data[sym].last_price
+
+    return last_trade_prices
 
 
 # symbol to instrument key mapping
@@ -60,28 +75,37 @@ def load_symbol_to_instrument_key_map(json_file="NSE.json"):
 
 
 # ✅ Main computation
-def compute_top5_nifty_below_ma():
+def compute_top5_nifty_below_ma(is_rsi, stock_list):
     results = []
-    symbol_to_key = load_symbol_to_instrument_key_map("NSE.json")
 
-    for sym in nifty50_list:
+    for sym in stock_list:
         try:
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
                 continue
 
-            ltp = get_ltp(instrument_key, sym)
-            closes = get_last_n_closes(instrument_key)
-            rsi = get_rsi_upstox(closes)
-            results.append((sym, ltp, rsi, instrument_key))
+            ltp = last_trading_price["NSE_EQ:" + str(sym)]
+            if is_rsi:
+                closes = get_last_n_closes(instrument_key)
+                rsi = get_rsi_upstox(closes)
+                results.append((sym, ltp, rsi, instrument_key))
+            else:
+                closes = get_last_n_closes(instrument_key)
+                ma20 = (sum(closes)) / 20
+                dev = ((ltp - ma20) / ma20) * 100
+                results.append((sym, ltp, ma20, dev, instrument_key))
         except ApiException as e:
             st.warning(f"{sym} error: {e}")
 
-    all_df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
-    below35_df = all_df[all_df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
-    below35_df.index = below35_df.index + 1  # start index from 1 for display
-
-    return all_df, below35_df
+    if is_rsi:
+        all_df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
+        below35_df = all_df[all_df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
+        below35_df.index = below35_df.index + 1  # start index from 1 for display
+        return all_df, below35_df
+    else:
+        df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
+        df = df.sort_values("Deviation%")
+        return df, df
 
 
 def buy(instrument_key, ltp):
@@ -163,19 +187,14 @@ def sell(instrument_key, ltp):
 
 def get_current_portfolio(top5stocks):
     existing_holdings = {item.instrument_token for item in portfolio.data}
-    existing_orders = order_apiv1.get_order_book(api_version=api_version)
+
     executed_order_tokens = {
         order.instrument_token
         for order in existing_orders.data
         if order.status in {"complete"}  # relevant open statuses
     }
 
-    global is_buy_done
-
     for _, row in top5stocks.iterrows():
-        if is_buy_done:
-            return
-
         token = row['Instrument_token']
         symbol = row['Symbol']
 
@@ -186,7 +205,9 @@ def get_current_portfolio(top5stocks):
         else:
             st.info(f"Buying new stock: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
-            is_buy_done = True
+            return True
+
+    return False
 
 
 def get_order_history():
@@ -199,7 +220,7 @@ def get_order_history():
         'segment': "EQ"
     }
 
-    order_summary = {}
+    order_summ = {}
 
     try:
         api_response = post_trade_api.get_trades_by_date_range(start_date, end_date, 1, 1000, **param)
@@ -209,29 +230,27 @@ def get_order_history():
             symbol = order.symbol
             if symbol not in nifty50_list:
                 continue
-            if symbol not in order_summary:
-                order_summary[symbol] = {
+            if symbol not in order_summ:
+                order_summ[symbol] = {
                     "last_buy_price": float(order.price),
                     "buy_count": 1
                 }
             else:
-                order_summary[symbol]["buy_count"] += 1
+                order_summ[symbol]["buy_count"] += 1
 
     except ApiException as e:
         st.error("Exception when calling OrderApi->get trades_by_date_range: %s\n" % e.body)
 
-    return order_summary
+    return order_summ
 
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def averaging():
-    order_summary = get_order_history()
-
+def averaging(stock_list, is_buy_done, is_rsi):
     candidates = []
 
     for item in portfolio.data:
-        if item.tradingsymbol not in nifty50_list:
+        if item.tradingsymbol not in stock_list:
             continue
 
         info = order_summary.get(item.tradingsymbol)
@@ -242,58 +261,56 @@ def averaging():
         if item.quantity == 0 or not last_buy_price:
             continue
 
-        try:
-            # Fetch the current LTP from market API
-            current_price = get_ltp(item.instrument_token, item.tradingsymbol)
-        except Exception as e:
-            st.warning(f"Failed to fetch LTP for {item.trading_symbol}: {e}")
-            continue
-
-        deviation = ((current_price - last_buy_price) / last_buy_price) * 100
+        ltp = last_trading_price["NSE_EQ:" + str(item.tradingsymbol)]
+        deviation = ((ltp - last_buy_price) / last_buy_price) * 100
         st.info(
-            item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {current_price} vs last buy {last_buy_price})")
+            item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {last_buy_price})")
 
         if deviation < -3.14:
             candidates.append({
                 "instrument_token": item.instrument_token,
-                "ltp": current_price,
+                "ltp": ltp,
                 "symbol": item.trading_symbol,
                 "deviation": deviation,
                 "order_count": order_count
             })
 
         if deviation > 6.28:
-            sell(item.instrument_token, current_price)
+            sell(item.instrument_token, ltp)
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
-    if is_buy_done:
+    if (is_rsi and is_buy_done) or (not is_rsi and is_buy_done):
         st.info("Buy order already placed, skipping averaging")
         return
 
-    candidates.sort(key=lambda x: x["deviation"])
+    if is_rsi:
+        candidates.sort(key=lambda x: x["deviation"])
 
-    for stock in candidates:
-        order_count = stock["order_count"]
-        rsi = rsi_map.get(stock["symbol"])
-        st.info("stock : " + str(stock) + " order_count : " + str(order_count) + " rsi : " + str(rsi))
-        if ((order_count == 1 and rsi < 30) or
-                (order_count == 2 and rsi < 25) or
-                (order_count == 3 and rsi < 20) or
-                (order_count == 4 and rsi < 15) or
-                (order_count == 5 and rsi < 10) or
-                (order_count == 6 and rsi < 5)):
-            buy(stock['instrument_token'], stock['ltp'])
-            st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
-            return
+        for stock in candidates:
+            order_count = stock["order_count"]
+            rsi = rsi_map.get(stock["symbol"])
+            st.info("stock : " + str(stock) + " order_count : " + str(order_count) + " rsi : " + str(rsi))
+            if ((order_count == 1 and rsi < 30) or
+                    (order_count == 2 and rsi < 25) or
+                    (order_count == 3 and rsi < 20) or
+                    (order_count == 4 and rsi < 15) or
+                    (order_count == 5 and rsi < 10) or
+                    (order_count == 6 and rsi < 5)):
+                buy(stock['instrument_token'], stock['ltp'])
+                st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
+            else:
+                st.info("No stock met RSI rules for averaging.")
     else:
-        st.info("No stock met RSI rules for averaging.")
+        best_candidate = min(candidates, key=lambda x: x["deviation"])
+        buy(best_candidate['instrument_token'], best_candidate['ltp'])
+        st.success(f"Averaged: {best_candidate['symbol']} @ Deviation {best_candidate['deviation']:.2f}%")
 
 
 # 🔐 UI Components
-st.title("📊 Nifty Shop RSI")
+st.title("📊 Nifty Shop + Penny ETF")
 access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
 run = st.button("🚀 Run Analysis and buy")
 
@@ -306,8 +323,8 @@ if run:
         nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
         nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
         nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
-        nifty50_list = nifty50_list + nifty_next50_list
-        st.info("nifty100_list : " + str(nifty50_list) + " count : " + str(len(nifty50_list)))
+        nifty100_list = nifty50_list + nifty_next50_list
+        st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
 
         config = upstox_client.Configuration()
         config.access_token = access_token
@@ -322,11 +339,14 @@ if run:
         order_apiv1 = upstox_client.OrderApi(api_client)
         api_version = '2.0'
         portfolio = portfolio_api.get_holdings(api_version)
-        is_buy_done = False
+        existing_orders = order_apiv1.get_order_book(api_version=api_version)
+        order_summary = get_order_history()
+        symbol_to_key = load_symbol_to_instrument_key_map()
+        last_trading_price = get_ltp()
 
         # Global injection for helper functions
         globals().update({
-            "nifty50_list": nifty50_list,
+            "nifty100_list": nifty100_list,
             "history_api": history_api,
             "quote_api": quote_api,
             "portfolio_api": portfolio_api,
@@ -334,17 +354,33 @@ if run:
             "api_version": api_version,
         })
 
-        all_rsi, rsi_below35 = compute_top5_nifty_below_ma()
+        is_rsi_algo = True
+        all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, nifty100_list)
         rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
 
+        is_nifty_buy_done = False
         if not rsi_below35.empty:
             st.subheader("📈 Stocks Below 35 RSI")
             st.dataframe(rsi_below35)
-            get_current_portfolio(rsi_below35)
+            is_nifty_buy_done = get_current_portfolio(rsi_below35)
         else:
             st.info("No qualifying stocks found.")
 
-        averaging()
+        averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
+
+        is_rsi_algo = False
+        penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
+        st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
+        all_rsi, top5 = compute_top5_nifty_below_ma(is_rsi_algo, penny_etf_list)
+        is_etf_buy_done = False
+        if not top5.empty:
+            st.subheader("📈 Top 2 Penny ETF Below MA20")
+            st.dataframe(top5)
+            is_etf_buy_done = get_current_portfolio(top5)
+        else:
+            st.info("No qualifying ETF found.")
+
+        averaging(penny_etf_list, is_etf_buy_done, is_rsi_algo)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
