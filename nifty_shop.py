@@ -312,9 +312,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
 def get_access_token():
     api_response = login_api.token(api_version, code=code, client_id=client_id, client_secret=client_secret,
                                    redirect_uri=redirect_uri, grant_type="authorization_code")
-    st.info("api_response :" + str(api_response))
     access_token = api_response.access_token
-    st.info("access_token :" + str(access_token))
     return access_token
 
 # 🔐 UI Components
@@ -323,7 +321,6 @@ st.title("📊 Nifty Shop + Penny ETF")
 login_api = upstox_client.LoginApi()
 api_version = '2.0'
 code = st.query_params.get("code")
-st.info("code :" + str(code))
 client_id = st.secrets["CLIENT_ID"]
 client_secret = st.secrets["CLIENT_SECRET"]
 redirect_uri = st.secrets["REDIRECT_URI"]
