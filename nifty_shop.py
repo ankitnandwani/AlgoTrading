@@ -310,9 +310,6 @@ def averaging(stock_list, is_buy_done, is_rsi):
 
 
 def get_access_token():
-    client_id = st.secrets["CLIENT_ID"]
-    client_secret = st.secrets["CLIENT_SECRET"]
-    redirect_uri = st.secrets["REDIRECT_URI"]
     api_response = login_api.token(api_version, code=code, client_id=client_id, client_secret=client_secret,
                                    redirect_uri=redirect_uri, grant_type="authorization_code")
     st.info("api_response :" + str(api_response))
@@ -327,10 +324,13 @@ login_api = upstox_client.LoginApi()
 api_version = '2.0'
 code = st.query_params.get("code")
 st.info("code :" + str(code))
+client_id = st.secrets["CLIENT_ID"]
+client_secret = st.secrets["CLIENT_SECRET"]
+redirect_uri = st.secrets["REDIRECT_URI"]
 
 if not code:
     # Show login button if user not authenticated
-    login_url = f"https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+    login_url = f"https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}"
     st.markdown(
         f'<a href="{login_url}" target="_blank">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Upstox</button>'
