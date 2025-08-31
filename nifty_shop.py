@@ -309,27 +309,24 @@ def averaging(stock_list, is_buy_done, is_rsi):
         st.success(f"Averaged: {best_candidate['symbol']} @ Deviation {best_candidate['deviation']:.2f}%")
 
 
+def get_access_token():
+    client_id = st.secrets["CLIENT_ID"]
+    client_secret = st.secrets["CLIENT_SECRET"]
+    redirect_uri = st.secrets["REDIRECT_URI"]
+    api_response = login_api.token(api_version, code=code, client_id=client_id, client_secret=client_secret,
+                                   redirect_uri=redirect_uri, grant_type="authorization_code")
+    st.info("api_response :" + str(api_response))
+    access_token = api_response.access_token
+    st.info("access_token :" + str(access_token))
+    return access_token
+
 # 🔐 UI Components
 st.title("📊 Nifty Shop + Penny ETF")
-
-access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
 
 login_api = upstox_client.LoginApi()
 api_version = '2.0'
 code = st.query_params.get("code")
 st.info("code :" + str(code))
-CLIENT_ID = st.secrets["CLIENT_ID"]
-CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
-REDIRECT_URI = st.secrets["REDIRECT_URI"]
-try:
-    # Get token API
-    api_response = login_api.token(api_version, code=code, client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                      redirect_uri=REDIRECT_URI, grant_type="authorization_code")
-    st.info("api_response :" + str(api_response))
-    access_token = api_response.access_token
-    st.info("access_token :" + str(access_token))
-except ApiException as e:
-    st.info("Exception when calling LoginApi->token: %s\n" % e)
 
 if not code:
     # Show login button if user not authenticated
@@ -357,7 +354,7 @@ else:
             all_products = nifty100_list + penny_etf_list
 
             config = upstox_client.Configuration()
-            config.access_token = access_token
+            config.access_token = get_access_token()
             api_client = upstox_client.ApiClient(config)
 
             history_api = upstox_client.HistoryV3Api(api_client)
