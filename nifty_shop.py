@@ -311,77 +311,103 @@ def averaging(stock_list, is_buy_done, is_rsi):
 
 # 🔐 UI Components
 st.title("📊 Nifty Shop + Penny ETF")
+
 access_token = st.text_input("Enter your ACCESS_TOKEN:", type="password")
-run = st.button("🚀 Run Analysis and buy")
 
-if run:
-    try:
-        exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "INDIGO", "SWIGGY"}
-        nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
-        nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
-        nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
-        nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
-        nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
-        nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
-        nifty100_list = nifty50_list + nifty_next50_list
-        st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
-        penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
-        all_products = nifty100_list + penny_etf_list
+login_api = upstox_client.LoginApi()
+api_version = '2.0'
+code = st.query_params.get("code")
+st.info("code :" + str(code))
+CLIENT_ID = st.secrets["CLIENT_ID"]
+CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
+REDIRECT_URI = st.secrets["REDIRECT_URI"]
+try:
+    # Get token API
+    api_response = login_api.token(api_version, code=code, client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
+                                      redirect_uri=REDIRECT_URI, grant_type="authorization_code")
+    st.info("api_response :" + str(api_response))
+    access_token = api_response.access_token
+    st.info("access_token :" + str(access_token))
+except ApiException as e:
+    st.info("Exception when calling LoginApi->token: %s\n" % e)
 
-        config = upstox_client.Configuration()
-        config.access_token = access_token
-        api_client = upstox_client.ApiClient(config)
+if not code:
+    # Show login button if user not authenticated
+    login_url = f"https://api.upstox.com/v2/login/authorization/dialog?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+    st.markdown(
+        f'<a href="{login_url}" target="_blank">'
+        f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Upstox</button>'
+        f'</a>',
+        unsafe_allow_html = True
+    )
+else:
+    st.success("✅ Successfully logged in with Upstox")
+    if st.button("🚀 Run Analysis and Trade"):
+        try:
+            exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "INDIGO", "SWIGGY"}
+            nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
+            nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
+            nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
+            nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
+            nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
+            nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
+            nifty100_list = nifty50_list + nifty_next50_list
+            st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
+            penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
+            all_products = nifty100_list + penny_etf_list
 
-        login_api = upstox_client.LoginApi(api_client)
-        history_api = upstox_client.HistoryV3Api(api_client)
-        quote_api = upstox_client.MarketQuoteV3Api(api_client)
-        portfolio_api = upstox_client.PortfolioApi(api_client)
-        post_trade_api = upstox_client.PostTradeApi(api_client)
-        order_api = upstox_client.OrderApiV3(api_client)
-        order_apiv1 = upstox_client.OrderApi(api_client)
-        api_version = '2.0'
-        portfolio = portfolio_api.get_holdings(api_version)
-        existing_orders = order_apiv1.get_order_book(api_version=api_version)
-        order_summary = get_order_history()
-        symbol_to_key = load_symbol_to_instrument_key_map()
-        last_trading_price = get_ltp()
+            config = upstox_client.Configuration()
+            config.access_token = access_token
+            api_client = upstox_client.ApiClient(config)
 
-        # Global injection for helper functions
-        globals().update({
-            "nifty100_list": nifty100_list,
-            "history_api": history_api,
-            "quote_api": quote_api,
-            "portfolio_api": portfolio_api,
-            "order_api": order_api,
-            "api_version": api_version,
-        })
+            history_api = upstox_client.HistoryV3Api(api_client)
+            quote_api = upstox_client.MarketQuoteV3Api(api_client)
+            portfolio_api = upstox_client.PortfolioApi(api_client)
+            post_trade_api = upstox_client.PostTradeApi(api_client)
+            order_api = upstox_client.OrderApiV3(api_client)
+            order_apiv1 = upstox_client.OrderApi(api_client)
+            portfolio = portfolio_api.get_holdings(api_version)
+            existing_orders = order_apiv1.get_order_book(api_version=api_version)
+            order_summary = get_order_history()
+            symbol_to_key = load_symbol_to_instrument_key_map()
+            last_trading_price = get_ltp()
 
-        is_rsi_algo = True
-        all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, nifty100_list)
-        rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
+            # Global injection for helper functions
+            globals().update({
+                "nifty100_list": nifty100_list,
+                "history_api": history_api,
+                "quote_api": quote_api,
+                "portfolio_api": portfolio_api,
+                "order_api": order_api,
+                "api_version": api_version,
+            })
 
-        is_nifty_buy_done = False
-        if not rsi_below35.empty:
-            st.subheader("📈 Stocks Below 35 RSI")
-            st.dataframe(rsi_below35)
-            is_nifty_buy_done = get_current_portfolio(rsi_below35)
-        else:
-            st.info("No qualifying stocks found.")
+            is_rsi_algo = True
+            all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, nifty100_list)
+            rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
 
-        averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
+            is_nifty_buy_done = False
+            if not rsi_below35.empty:
+                st.subheader("📈 Stocks Below 35 RSI")
+                st.dataframe(rsi_below35)
+                is_nifty_buy_done = get_current_portfolio(rsi_below35)
+            else:
+                st.info("No qualifying stocks found.")
 
-        is_rsi_algo = False
-        st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
-        all_rsi, top5 = compute_top5_nifty_below_ma(is_rsi_algo, penny_etf_list)
-        is_etf_buy_done = False
-        if not top5.empty:
-            st.subheader("📈 Top 2 Penny ETF Below MA20")
-            st.dataframe(top5)
-            is_etf_buy_done = get_current_portfolio(top5)
-        else:
-            st.info("No qualifying ETF found.")
+            averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
 
-        averaging(penny_etf_list, is_etf_buy_done, is_rsi_algo)
+            is_rsi_algo = False
+            st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
+            all_rsi, top5 = compute_top5_nifty_below_ma(is_rsi_algo, penny_etf_list)
+            is_etf_buy_done = False
+            if not top5.empty:
+                st.subheader("📈 Top 2 Penny ETF Below MA20")
+                st.dataframe(top5)
+                is_etf_buy_done = get_current_portfolio(top5)
+            else:
+                st.info("No qualifying ETF found.")
 
-    except Exception as e:
-        st.error(f"Something went wrong: {e}")
+            averaging(penny_etf_list, is_etf_buy_done, is_rsi_algo)
+
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
