@@ -157,7 +157,7 @@ def sell(instrument_key, ltp):
 
     quantity = 0
     for item in portfolio.data:
-        if item.tradingsymbol not in nifty100_list:
+        if item.tradingsymbol not in all_products:
             continue
         if item.instrument_token == instrument_key:
             quantity = item.quantity
