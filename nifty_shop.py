@@ -157,7 +157,7 @@ def sell(instrument_key, ltp):
 
     quantity = 0
     for item in portfolio.data:
-        if item.tradingsymbol not in nifty50_list:
+        if item.tradingsymbol not in nifty100_list:
             continue
         if item.instrument_token == instrument_key:
             quantity = item.quantity
@@ -169,7 +169,7 @@ def sell(instrument_key, ltp):
     st.markdown(f"""
             **Instrument Token:** `{instrument_key}`  
             **LTP:** `₹{ltp}`
-            **Quantity:** `₹{quantity}`
+            **Quantity:** `{quantity}`
             **AMO:** `{is_amo}`
             """)
 
