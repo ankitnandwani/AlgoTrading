@@ -175,7 +175,9 @@ def sell(instrument_key, ltp):
 
 
 def get_current_portfolio():
+    st.info("ok")
     existing_holds = {item["token"] for item in portfolio["data"]["net"]}
+    st.info("existing_holds : " + str(existing_holds))
     return existing_holds
 
 
