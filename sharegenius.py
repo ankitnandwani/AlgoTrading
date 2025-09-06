@@ -175,24 +175,18 @@ def sell(instrument_key, ltp):
 
 
 def get_current_portfolio():
-    st.info("ok")
-    for item in positions["data"]["net"]:
-        st.info("item : " + str(item))
-        st.info("token : " + str(item["token"]))
     existing_pos = {item["token"] for item in positions["data"]["net"]}
-    st.info("existing_pos : " + str(existing_pos))
     return existing_pos
 
 
 def filter_top3_in_holdings(top3stocks):
     for _, row in top3stocks.iterrows():
         instrument_token = row['Instrument_token']
-        symbol = row['Symbol']
 
         if instrument_token in existing_positions:
             st.info(f"Already holding: {row['Symbol']}")
         else:
-            st.info(f"Buying new ETF: {row['Symbol']}")
+            st.info(f"Buying new Stock: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
             return True
 
@@ -201,41 +195,18 @@ def filter_top3_in_holdings(top3stocks):
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def averaging():
-    candidates = []
-
-    for holding in portfolio["data"]:
-        nse_data = holding["nse"]
-        avg_buy_price = holding.get("average_price")
-        instrument_key = nse_data.get("token")
-        symbol = nse_data.get("symbol")
+def seller():
+    for holding in positions["data"]["net"]:
+        avg_buy_price = holding["average_price"]
+        instrument_key = holding["token"]
+        symbol = holding["symbol"]
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
         st.info(
             symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price})")
 
-        if deviation < -3.14:
-            candidates.append({
-                "instrument_token": instrument_key,
-                "ltp": ltp,
-                "symbol": symbol,
-                "deviation": deviation
-            })
-
         if deviation >= 3.14:
             sell(instrument_key, ltp)
-
-    if not candidates:
-        st.info("No eligible stock found in portfolio for averaging.")
-        return
-
-    if bought_etf:
-        st.info("Buy order already placed, skipping averaging")
-        return
-
-    best_candidate = min(candidates, key=lambda x: x["deviation"])
-    buy(best_candidate['instrument_token'], best_candidate['ltp'])
-    st.success(f"Averaged: {best_candidate['symbol']} @ Deviation {best_candidate['deviation']:.2f}%")
 
 
 # 🔐 UI Components
@@ -265,17 +236,17 @@ else:
             etf, jewel, nifty = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
-            portfolio = client.holdings()
             positions = client.positions()
             st.info("positions : " + str(positions))
             total_positions = len(positions["data"]["net"])
             st.info("total positions " + str(total_positions))
+            seller()
             if total_positions >= 14:
                 st.info("Total holdings ceiling limit reached. Exiting!")
                 st.stop()
             existing_orders = client.orders(limit=50, offset=1)
             existing_positions = get_current_portfolio()
-            st.info("existing_holdings : " + str(existing_positions))
+            st.info("existing_positions : " + str(existing_positions))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
@@ -304,6 +275,5 @@ else:
             else:
                 st.info("No qualifying Stocks found.")
 
-            averaging()
         except Exception as e:
             st.error(f"Something went wrong: {e}")
