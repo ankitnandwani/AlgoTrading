@@ -175,15 +175,7 @@ def sell(instrument_key, ltp):
 
 
 def get_current_portfolio():
-    existing_holds = {item["nse"]["token"] for item in portfolio["data"]}
-
-    executed_ordr_tokens = {
-        order["token"]
-        for order in existing_orders.get("orders", [])
-        if order.get("status") == "EXECUTED"
-    }
-
-    return existing_holds, executed_ordr_tokens
+    return {item["token"] for item in portfolio["data"]["net"]}
 
 
 def filter_top3_in_holdings(top3stocks):
@@ -193,8 +185,6 @@ def filter_top3_in_holdings(top3stocks):
 
         if instrument_token in existing_holdings:
             st.info(f"Already holding: {row['Symbol']}")
-        elif instrument_token in executed_order_tokens:
-            st.info(f"Order already placed for: {symbol}")
         else:
             st.info(f"Buying new ETF: {row['Symbol']}")
             buy(row['Instrument_token'], row['LTP'])
@@ -275,12 +265,12 @@ else:
             st.info("positions : " + str(positions))
             total_positions = len(positions["data"]["net"])
             st.info("total positions " + str(total_positions))
-            if total_positions >= 2:
-                st.stop("Total holdings ceiling limit of 14 is reached. Exiting!")
+            if total_positions >= 14:
+                st.info("Total holdings ceiling limit reached. Exiting!")
+                st.stop()
             existing_orders = client.orders(limit=50, offset=1)
-            existing_holdings, executed_order_tokens = get_current_portfolio()
-            st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(
-                executed_order_tokens))
+            existing_holdings = get_current_portfolio()
+            st.info("existing_holdings : " + str(existing_holdings))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
