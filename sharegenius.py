@@ -273,6 +273,8 @@ else:
             st.info("portfolio : " + str(portfolio))
             positions = client.positions()
             st.info("positions : " + str(positions))
+            total_positions = len(positions["data"]["net"])
+            st.info("total positions " + str(total_positions))
             existing_orders = client.orders(limit=50, offset=1)
             existing_holdings, executed_order_tokens = get_current_portfolio()
             st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(
