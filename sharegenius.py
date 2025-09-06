@@ -176,12 +176,12 @@ def sell(instrument_key, ltp):
 
 def get_current_portfolio():
     st.info("ok")
-    for item in portfolio["data"]["net"]:
+    for item in positions["data"]["net"]:
         st.info("item : " + str(item))
         st.info("token : " + str(item["token"]))
-    existing_holds = {item["token"] for item in portfolio["data"]["net"]}
-    st.info("existing_holds : " + str(existing_holds))
-    return existing_holds
+    existing_pos = {item["token"] for item in positions["data"]["net"]}
+    st.info("existing_pos : " + str(existing_pos))
+    return existing_pos
 
 
 def filter_top3_in_holdings(top3stocks):
@@ -189,7 +189,7 @@ def filter_top3_in_holdings(top3stocks):
         instrument_token = row['Instrument_token']
         symbol = row['Symbol']
 
-        if instrument_token in existing_holdings:
+        if instrument_token in existing_positions:
             st.info(f"Already holding: {row['Symbol']}")
         else:
             st.info(f"Buying new ETF: {row['Symbol']}")
@@ -274,8 +274,8 @@ else:
                 st.info("Total holdings ceiling limit reached. Exiting!")
                 st.stop()
             existing_orders = client.orders(limit=50, offset=1)
-            existing_holdings = get_current_portfolio()
-            st.info("existing_holdings : " + str(existing_holdings))
+            existing_positions = get_current_portfolio()
+            st.info("existing_holdings : " + str(existing_positions))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
