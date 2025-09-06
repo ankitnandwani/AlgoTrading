@@ -4,7 +4,7 @@ import math
 import gspread
 import pandas as pd
 import json
-from datetime import datetime, timedelta, UTC, timezone
+from datetime import datetime, timedelta, UTC
 import streamlit as st
 from google.oauth2.service_account import Credentials
 from vortex_api import VortexAPI, Constants
@@ -40,6 +40,7 @@ def google_auth():
     top_nifty_shop_cleaned = [code.replace("NSE:", "").strip() for code in top_nifty_shop_cleaned]
     return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned
 
+
 # 🛠 Helper: Get historical closes
 def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     to_date = datetime.now(UTC)
@@ -48,11 +49,10 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
                                      start=from_date,
                                      resolution=Constants.Resolutions.DAY)
 
-    st.info("hist : " + str(hist))
     closes = hist['c']
     close_rev = closes[::-1]
-    st.info("close_rev : " + str(close_rev[:n]))
     return close_rev[:n] if len(close_rev) >= n else []
+
 
 def get_ltp():
     all_products = etf + jewel + nifty
@@ -110,7 +110,7 @@ def compute_top3(shop):
 
 def buy(instrument_key, ltp):
     min_investment = 10000
-    quantity = max(1, math.ceil((min_investment / ltp)*2))
+    quantity = max(1, math.ceil((min_investment / ltp) * 2))
 
     # Display order details
     st.subheader("🛒 Buy Order details")
@@ -149,7 +149,6 @@ def sell(instrument_key, ltp):
             quantity = item.get("total_free", 0)
             break
 
-
     # Display order details
     st.subheader("🛒 Sell Order details")
     st.markdown(f"""
@@ -160,9 +159,12 @@ def sell(instrument_key, ltp):
             """)
 
     try:
-        body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key, transaction_type=Constants.TransactionSides.SELL,
-                                                product=Constants.ProductTypes.MTF, variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
-                                                price=ltp, trigger_price=0.0, disclosed_quantity=0, validity=Constants.ValidityTypes.FULL_DAY)
+        body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key,
+                                  transaction_type=Constants.TransactionSides.SELL,
+                                  product=Constants.ProductTypes.MTF,
+                                  variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
+                                  price=ltp, trigger_price=0.0, disclosed_quantity=0,
+                                  validity=Constants.ValidityTypes.FULL_DAY)
         st.info("order details : " + str(body))
         if body.get("status") == "success":
             st.success(f"✅ Order placed successfully")
@@ -183,6 +185,7 @@ def get_current_portfolio():
 
     return existing_holds, executed_ordr_tokens
 
+
 def filter_top3_in_holdings(top3stocks):
     for _, row in top3stocks.iterrows():
         instrument_token = row['Instrument_token']
@@ -198,6 +201,7 @@ def filter_top3_in_holdings(top3stocks):
             return True
 
     return False
+
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
@@ -252,7 +256,7 @@ if not auth_token:
         f'<a href="{login_url}" target="_blank">'
         f'<button style="padding:10px 20px;font-size:16px;">🔑 Login with Rupeezy</button>'
         f'</a>',
-        unsafe_allow_html = True
+        unsafe_allow_html=True
     )
 else:
     st.success("✅ Successfully logged in with Rupeezy")
@@ -271,7 +275,8 @@ else:
             st.info("positions : " + str(positions))
             existing_orders = client.orders(limit=50, offset=1)
             existing_holdings, executed_order_tokens = get_current_portfolio()
-            st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(executed_order_tokens))
+            st.info("existing_holdings : " + str(existing_holdings) + " executed_order_tokens : " + str(
+                executed_order_tokens))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
