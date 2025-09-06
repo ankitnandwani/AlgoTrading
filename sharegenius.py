@@ -175,7 +175,8 @@ def sell(instrument_key, ltp):
 
 
 def get_current_portfolio():
-    return {item["token"] for item in portfolio["data"]["net"]}
+    existing_holds = {item["token"] for item in portfolio["data"]["net"]}
+    return existing_holds
 
 
 def filter_top3_in_holdings(top3stocks):
@@ -260,7 +261,6 @@ else:
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
             portfolio = client.holdings()
-            st.info("portfolio : " + str(portfolio))
             positions = client.positions()
             st.info("positions : " + str(positions))
             total_positions = len(positions["data"]["net"])
