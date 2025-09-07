@@ -1,8 +1,5 @@
 import datetime
 import math
-import smtplib
-from email.message import EmailMessage
-
 import gspread
 import pandas as pd
 import json
@@ -123,7 +120,7 @@ def log_buy_order_to_sheet(order_details):
     log_sheet.append_row(order_details)
 
 
-def buy(instrument_key, ltp):
+def buy(instrument_key, ltp, symbol):
     min_investment = 10000
     quantity = max(1, math.ceil((min_investment / ltp) * 2))
 
@@ -131,6 +128,7 @@ def buy(instrument_key, ltp):
     st.subheader("🛒 Buy Order details")
     st.markdown(f"""
                             **Instrument Token:** `{instrument_key}`    
+                            **Symbol:** `{symbol}`    
                             **Quantity:** `{quantity}`
                             **Order Value:** `₹{quantity * ltp}`  
                             **Price:** `₹{ltp}`
@@ -147,8 +145,9 @@ def buy(instrument_key, ltp):
             st.success(f"✅ Order placed successfully")
             # Log the order details to Google Sheets
             order_details = [
-                datetime.now().strftime('%Y-%m-%d'),  # Timestamp
+                datetime.now().strftime('%Y-%m-%d'),
                 instrument_key,  # Instrument Token
+                symbol
             ]
             log_buy_order_to_sheet(order_details)
         else:
@@ -196,7 +195,7 @@ def filter_top3_in_holdings(top3stocks):
             st.info(f"Already holding: {row['Symbol']}")
         else:
             st.info(f"Buying new Stock: {row['Symbol']}")
-            buy(row['Instrument_token'], row['LTP'])
+            buy(row['Instrument_token'], row['LTP'], row['Symbol'])
             return True
 
     return False
@@ -219,10 +218,10 @@ def sell_or_take_delivery():
         if matched_rows:
             order_date_str = matched_rows[0]["Order date"]  # Assuming first column header is "Timestamp"
             order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
-            days_elapsed = (datetime.now().date() - order_date).days
+            days_elapsed = (datetime.now().date() - order_date).days - 1
             st.info(symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed}")
 
-            if days_elapsed > 20:
+            if days_elapsed >= 20:
                 st.subheader("Take delivery of " + str(symbol))
 
 
