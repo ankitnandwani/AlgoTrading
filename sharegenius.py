@@ -253,7 +253,7 @@ else:
             funds = funds_resp['nse']['net_available']
             st.info("funds : " + str(funds))
             if funds<20000:
-                st.error("Gareeb pase daal! Exiting . . .")
+                st.error("Gareeb pase daal! Exiting 🚨")
                 st.stop()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
@@ -263,7 +263,7 @@ else:
             st.info("total positions " + str(total_positions))
             sell_or_take_delivery()
             if total_positions >= 14:
-                st.error("Total holdings ceiling limit reached. Exiting . . . ")
+                st.error("Total holdings ceiling limit reached. Exiting 🚨 ")
                 st.stop()
             existing_positions = get_current_portfolio()
 
