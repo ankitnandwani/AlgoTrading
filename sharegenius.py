@@ -212,7 +212,6 @@ def sell_or_take_delivery():
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
 
-
         if deviation >= 3.14:
             sell(instrument_key, ltp, quantity)
 
@@ -221,10 +220,9 @@ def sell_or_take_delivery():
             order_date_str = matched_rows[0]["Order date"]  # Assuming first column header is "Timestamp"
             order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
             days_elapsed = (datetime.now().date() - order_date).days
-            st.info(
-                symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed}")
+            st.info(symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed}")
 
-            if days_elapsed >= 5:
+            if days_elapsed > 20:
                 st.subheader("Take delivery of " + str(symbol))
 
 
@@ -265,7 +263,6 @@ else:
                 st.stop()
             existing_orders = client.orders(limit=50, offset=1)
             existing_positions = get_current_portfolio()
-            st.info("existing_positions : " + str(existing_positions))
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
