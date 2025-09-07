@@ -201,22 +201,6 @@ def filter_top3_in_holdings(top3stocks):
 
     return False
 
-def send_email(subject, body, to="dp@rupeezy.in"):
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = st.secrets["email"]["address"]  # Replace with your actual email
-    msg["To"] = to
-    msg.set_content(body)
-
-    # Configure SMTP (example using Gmail, customize if using another provider)
-    with smtplib.SMTP("smtp.office365.com", 587) as server:
-        server.starttls()
-        server.login(
-            st.secrets["email"]["address"],     # Hotmail email address
-            st.secrets["email"]["password"]
-        )
-        server.send_message(msg)
-
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def sell_or_take_delivery():
@@ -238,12 +222,10 @@ def sell_or_take_delivery():
             order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
             days_elapsed = (datetime.now().date() - order_date).days
             st.info(
-                symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed:.2f}%")
+                symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed}")
 
-            if days_elapsed >= 20:
-                subject = f"Request to take Delivery of Stock {symbol} (Token {instrument_key})"
-                body = f"Hi, I want take delivery of stock {symbol} with instrument key {instrument_key} , I already have the required funds in my account. Please process the request ASAP."
-                send_email(subject, body, to="ankitnandwani@duck.com")
+            if days_elapsed >= 5:
+                st.subheader("Take delivery of " + str(symbol))
 
 
 # 🔐 UI Components
