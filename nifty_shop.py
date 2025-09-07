@@ -319,22 +319,24 @@ def get_access_token():
 def get_stock_list():
     exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "SWIGGY"}
     # Fallback lists in case NSE fetch fails
-    fallback_nifty50 = [
-        "RELIANCE", "TCS", "HDFCBANK", "INFY", "HDFC", "ICICIBANK", "KOTAKBANK", "HINDUNILVR"
-        # Add other fallback NIFTY 50 symbols as needed
-    ]
-    fallback_nifty_next50 = [
-        "ABBOTINDIA", "AUBANK", "BAJAJHLDNG", "BANDHANBNK", "IDFCFIRSTB", "MUTHOOTFIN"
-        # Add other fallback NIFTY NEXT 50 symbols as needed
-    ]
-    nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
-    nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
-    nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
-    st.info("nifty50_list : " + str(nifty50_list))
-    nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
-    nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
-    nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
-    st.info("nifty_next50_list : " + str(nifty_next50_list))
+    fallback_nifty50 = ['RELIANCE', 'HDFCBANK', 'TCS', 'BHARTIARTL', 'ICICIBANK', 'SBIN', 'HINDUNILVR', 'INFY', 'BAJFINANCE', 'ITC', 'LT', 'MARUTI', 'M&M', 'KOTAKBANK', 'HCLTECH', 'SUNPHARMA', 'ULTRACEMCO', 'AXISBANK', 'TITAN', 'BAJAJFINSV', 'NTPC', 'ETERNAL', 'ONGC', 'ADANIPORTS', 'BEL', 'POWERGRID', 'ADANIENT', 'JSWSTEEL', 'WIPRO', 'TATAMOTORS', 'BAJAJ-AUTO', 'ASIANPAINT', 'COALINDIA', 'NESTLEIND', 'TATASTEEL', 'JIOFIN', 'TRENT', 'GRASIM', 'SBILIFE', 'EICHERMOT', 'HINDALCO', 'HDFCLIFE', 'TECHM', 'CIPLA', 'APOLLOHOSP', 'SHRIRAMFIN', 'HEROMOTOCO', 'TATACONSUM', 'DRREDDY', 'INDUSINDBK']
+    fallback_nifty_next50 = ['ABB', 'ADANIENSOL', 'ADANIGREEN', 'ADANIPOWER', 'AMBUJACEM', 'DMART', 'BAJAJHLDNG', 'BAJAJHFL', 'BANKBARODA', 'BPCL', 'BOSCHLTD', 'BRITANNIA', 'CGPOWER', 'CANBK', 'CHOLAFIN', 'DLF', 'DABUR', 'DIVISLAB', 'GAIL', 'GODREJCP', 'HAVELLS', 'HAL', 'HYUNDAI', 'ICICIGI', 'ICICIPRULI', 'INDHOTEL', 'IOC', 'IRFC', 'NAUKRI', 'INDIGO', 'JSWENERGY', 'JINDALSTEL', 'LTIM', 'LICI', 'LODHA', 'PIDILITIND', 'PFC', 'PNB', 'RECLTD', 'MOTHERSON', 'SHREECEM', 'SIEMENS', 'SWIGGY', 'TVSMOTOR', 'TATAPOWER', 'TORNTPHARM', 'UNITDSPR', 'VBL', 'VEDL', 'ZYDUSLIFE']
+    try:
+        nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
+        nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
+        nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
+    except Exception as e:
+        st.error(f"Failed to fetch NIFTY 50 data from NSE: {e}")
+        nifty50_list = [symbol for symbol in fallback_nifty50 if symbol not in exclude]
+
+    try:
+        nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
+        nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
+        nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
+    except Exception as e:
+        st.error(f"Failed to fetch NIFTY NEXT 50 data from NSE: {e}")
+        nifty_next50_list = [symbol for symbol in fallback_nifty_next50 if symbol not in exclude]
+
     nifty100_lst = nifty50_list + nifty_next50_list
     penny_etf_lst = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
     return nifty100_lst, penny_etf_lst
