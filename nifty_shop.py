@@ -100,12 +100,12 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
     if is_rsi:
         all_df = pd.DataFrame(results, columns=["Symbol", "LTP", "RSI", "Instrument_token"])
         below35_df = all_df[all_df["RSI"] < 35].sort_values("RSI").reset_index(drop=True)
-        below35_df.index = below35_df.index + 1  # start index from 1 for display
+        below35_df.index += 1  # start index from 1 for display
         return all_df, below35_df
     else:
         df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
-        df = df.sort_values("Deviation%")
-        df.index = df.index + 1
+        df = df.sort_values("Deviation%").reset_index(drop=True)
+        df.index += 1
         return df, df.head(2)
 
 
