@@ -108,6 +108,16 @@ def compute_top3(shop):
     return df.head(3)
 
 
+def log_buy_order_to_sheet(order_details):
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+    gclient = gspread.authorize(creds)
+    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
+    log_sheet = ss.worksheet("Buy Orders Log")
+
+    log_sheet.append_row(order_details)
+
+
 def buy(instrument_key, ltp):
     min_investment = 10000
     quantity = max(1, math.ceil((min_investment / ltp) * 2))
@@ -122,6 +132,12 @@ def buy(instrument_key, ltp):
                             """)
 
     try:
+        # Log the order details to Google Sheets
+        order_details = [
+            datetime.now().strftime('%Y-%m-%d'),  # Timestamp
+            instrument_key,  # Instrument Token
+        ]
+        log_buy_order_to_sheet(order_details)
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key,
                                   transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
                                   variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
@@ -136,19 +152,7 @@ def buy(instrument_key, ltp):
         st.error(f"❌ Failed to place order: {e}")
 
 
-def sell(instrument_key, ltp):
-    quantity = 0
-
-    for item in portfolio["data"]:
-        nse_data = item.get("nse")
-
-        if not nse_data:
-            continue
-
-        if nse_data.get("exchange") == "NSE_EQ" and nse_data.get("token") == instrument_key:
-            quantity = item.get("total_free", 0)
-            break
-
+def sell(instrument_key, ltp, quantity):
     # Display order details
     st.subheader("🛒 Sell Order details")
     st.markdown(f"""
@@ -199,6 +203,7 @@ def seller():
     for holding in positions["data"]["net"]:
         avg_buy_price = holding["average_price"]
         instrument_key = holding["token"]
+        quantity = holding["quantity"]
         symbol = holding["symbol"]
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
@@ -206,7 +211,7 @@ def seller():
             symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price})")
 
         if deviation >= 3.14:
-            sell(instrument_key, ltp)
+            sell(instrument_key, ltp, quantity)
 
 
 # 🔐 UI Components
