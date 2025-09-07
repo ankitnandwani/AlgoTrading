@@ -254,7 +254,6 @@ else:
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
             positions = client.positions()
-            st.info("positions : " + str(positions))
             total_positions = len(positions["data"]["net"])
             st.info("total positions " + str(total_positions))
             sell_or_take_delivery()
