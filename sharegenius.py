@@ -248,9 +248,13 @@ else:
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
-            #token = token_resp["data"]["access_token"]
-            funds = client.funds()
+
+            funds_resp = client.funds()
+            funds = funds_resp['nse']['net_available']
             st.info("funds : " + str(funds))
+            if funds<20000:
+                st.error("Gareeb pase daal! Exiting . . .")
+                st.stop()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
@@ -259,7 +263,7 @@ else:
             st.info("total positions " + str(total_positions))
             sell_or_take_delivery()
             if total_positions >= 14:
-                st.info("Total holdings ceiling limit reached. Exiting!")
+                st.error("Total holdings ceiling limit reached. Exiting . . . ")
                 st.stop()
             existing_positions = get_current_portfolio()
 
