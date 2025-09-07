@@ -137,12 +137,6 @@ def buy(instrument_key, ltp):
                             """)
 
     try:
-        # Log the order details to Google Sheets
-        order_details = [
-            datetime.now().strftime('%Y-%m-%d'),  # Timestamp
-            instrument_key,  # Instrument Token
-        ]
-        log_buy_order_to_sheet(order_details)
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key,
                                   transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
                                   variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
@@ -151,6 +145,12 @@ def buy(instrument_key, ltp):
         st.info("order details : " + str(body))
         if body.get("status") == "success":
             st.success(f"✅ Order placed successfully")
+            # Log the order details to Google Sheets
+            order_details = [
+                datetime.now().strftime('%Y-%m-%d'),  # Timestamp
+                instrument_key,  # Instrument Token
+            ]
+            log_buy_order_to_sheet(order_details)
         else:
             st.error("❌ Order placement failed!")
     except Exception as e:
