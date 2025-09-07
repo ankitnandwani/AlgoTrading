@@ -1,5 +1,7 @@
 import datetime
 import math
+import smtplib
+from email.message import EmailMessage
 
 import gspread
 import pandas as pd
@@ -23,6 +25,7 @@ def google_auth():
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
     top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
+    log_sheet = ss.worksheet("Buy Orders Log")
 
     # ETF Shop
     etf_shop_all = etf_shop.col_values(2)  # if “NSE Code” is the first column
@@ -38,7 +41,9 @@ def google_auth():
     top_nifty_shop_all = top_nifty_shop.col_values(2)  # if “NSE Code” is the first column
     top_nifty_shop_cleaned = top_nifty_shop_all[1:]
     top_nifty_shop_cleaned = [code.replace("NSE:", "").strip() for code in top_nifty_shop_cleaned]
-    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned
+
+    all_data = log_sheet.get_all_records()
+    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned, all_data
 
 
 # 🛠 Helper: Get historical closes
@@ -196,10 +201,25 @@ def filter_top3_in_holdings(top3stocks):
 
     return False
 
+def send_email(subject, body, to="dp@rupeezy.in"):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = st.secrets["email"]["address"]  # Replace with your actual email
+    msg["To"] = to
+    msg.set_content(body)
+
+    # Configure SMTP (example using Gmail, customize if using another provider)
+    with smtplib.SMTP("smtp.office365.com", 587) as server:
+        server.starttls()
+        server.login(
+            st.secrets["email"]["address"],     # Hotmail email address
+            st.secrets["email"]["password"]
+        )
+        server.send_message(msg)
 
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
-def seller():
+def sell_or_take_delivery():
     for holding in positions["data"]["net"]:
         avg_buy_price = holding["average_price"]
         instrument_key = holding["token"]
@@ -207,11 +227,23 @@ def seller():
         symbol = holding["symbol"]
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
-        st.info(
-            symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price})")
+
 
         if deviation >= 3.14:
             sell(instrument_key, ltp, quantity)
+
+        matched_rows = [row for row in all_logs if str(row["Instrument Token"]) == str(instrument_key)]
+        if matched_rows:
+            order_date_str = matched_rows[0]["Order date"]  # Assuming first column header is "Timestamp"
+            order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
+            days_elapsed = (datetime.now().date() - order_date).days
+            st.info(
+                symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs avg {avg_buy_price}) and holding days elapsed = {days_elapsed:.2f}%")
+
+            if days_elapsed >= 20:
+                subject = f"Request to take Delivery of Stock {symbol} (Token {instrument_key})"
+                body = f"Hi, I want take delivery of stock {symbol} with instrument key {instrument_key} , I already have the required funds in my account. Please process the request ASAP."
+                send_email(subject, body, to="ankitnandwani@duck.com")
 
 
 # 🔐 UI Components
@@ -238,14 +270,15 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
             token = token_resp["data"]["access_token"]
-            etf, jewel, nifty = google_auth()
+            etf, jewel, nifty, all_logs = google_auth()
+            st.info("all_logs : " + str(all_logs))
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
             positions = client.positions()
             st.info("positions : " + str(positions))
             total_positions = len(positions["data"]["net"])
             st.info("total positions " + str(total_positions))
-            seller()
+            sell_or_take_delivery()
             if total_positions >= 14:
                 st.info("Total holdings ceiling limit reached. Exiting!")
                 st.stop()
