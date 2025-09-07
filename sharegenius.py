@@ -248,7 +248,9 @@ else:
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
-            token = token_resp["data"]["access_token"]
+            #token = token_resp["data"]["access_token"]
+            funds = client.funds()
+            st.info("funds : " + str(funds))
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
