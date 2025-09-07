@@ -378,6 +378,10 @@ else:
             post_trade_api = upstox_client.PostTradeApi(api_client)
             order_api = upstox_client.OrderApiV3(api_client)
             order_apiv1 = upstox_client.OrderApi(api_client)
+            user_api = upstox_client.UserApi(api_client)
+
+            funds_resp = user_api.get_user_fund_margin(api_version)
+            st.info("funds_resp : " + str(funds_resp))
             portfolio = portfolio_api.get_holdings(api_version)
             existing_orders = order_apiv1.get_order_book(api_version=api_version)
             order_summary = get_order_history()
