@@ -316,6 +316,29 @@ def get_access_token():
     access_token = api_response.access_token
     return access_token
 
+def get_stock_list():
+    exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "SWIGGY"}
+    # Fallback lists in case NSE fetch fails
+    fallback_nifty50 = [
+        "RELIANCE", "TCS", "HDFCBANK", "INFY", "HDFC", "ICICIBANK", "KOTAKBANK", "HINDUNILVR"
+        # Add other fallback NIFTY 50 symbols as needed
+    ]
+    fallback_nifty_next50 = [
+        "ABBOTINDIA", "AUBANK", "BAJAJHLDNG", "BANDHANBNK", "IDFCFIRSTB", "MUTHOOTFIN"
+        # Add other fallback NIFTY NEXT 50 symbols as needed
+    ]
+    nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
+    nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
+    nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
+    st.info("nifty50_list : " + str(nifty50_list))
+    nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
+    nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
+    nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
+    st.info("nifty_next50_list : " + str(nifty_next50_list))
+    nifty100_lst = nifty50_list + nifty_next50_list
+    penny_etf_lst = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
+    return nifty100_lst, penny_etf_lst
+
 # 🔐 UI Components
 st.title("📊 Nifty Shop + Penny ETF")
 
@@ -339,16 +362,8 @@ else:
     st.success("✅ Successfully logged in with Upstox")
     if st.button("🚀 Run Analysis and Trade"):
         try:
-            exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "INDIGO", "SWIGGY"}
-            nifty50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050")
-            nifty50_list = [stock['symbol'] for stock in nifty50_data['data']]
-            nifty50_list = [symbol for symbol in nifty50_list if symbol not in exclude]
-            nifty_next50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20NEXT%2050")
-            nifty_next50_list = [stock['symbol'] for stock in nifty_next50_data['data']]
-            nifty_next50_list = [symbol for symbol in nifty_next50_list if symbol not in exclude]
-            nifty100_list = nifty50_list + nifty_next50_list
+            nifty100_list, penny_etf_list = get_stock_list()
             st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
-            penny_etf_list = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
             all_products = nifty100_list + penny_etf_list
 
             config = upstox_client.Configuration()
