@@ -108,8 +108,8 @@ def compute_top3(shop):
             st.warning(f"{sym} error: {e}")
 
     df = pd.DataFrame(results, columns=["Symbol", "LTP", "MA20", "Deviation%", "Instrument_token"])
-    df = df.sort_values("Deviation%")
-    df.index = df.index + 1  # start index from 1 for display
+    df = df.sort_values("Deviation%").reset_index(drop=True)
+    df.index += 1  # start index from 1 for display
     return df.head(3)
 
 
