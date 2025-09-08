@@ -10,15 +10,13 @@ from vortex_api import VortexAPI, Constants
 
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
 
+def get_spreadsheet():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+    gclient = gspread.authorize(creds)
+    return gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
 
 def google_auth():
-    # Define scope and load credentials
-    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-
-    # Authorize and open the sheet
-    gclient = gspread.authorize(creds)
-    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
     top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
@@ -129,12 +127,7 @@ def compute_top3(shop):
 
 
 def log_buy_order_to_sheet(order_details):
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-    gclient = gspread.authorize(creds)
-    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     log_sheet = ss.worksheet("Buy Orders Log")
-
     log_sheet.append_row(order_details)
 
 
@@ -285,6 +278,7 @@ else:
             token_resp = client.exchange_token(auth_token)
             positions = client.positions()
             existing_positions = get_current_portfolio()
+            ss = get_spreadsheet()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
