@@ -40,7 +40,27 @@ def google_auth():
     top_nifty_shop_cleaned = [code.replace("NSE:", "").strip() for code in top_nifty_shop_cleaned]
 
     all_data = log_sheet.get_all_records()
-    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned, all_data
+
+    # Collect rows to keep
+    rows_to_keep = []
+
+    for row in all_data:
+        if row['Instrument Key'] in existing_positions:
+            rows_to_keep.append(row)
+
+    # Clear the sheet
+    log_sheet.clear()
+
+    # Write header again
+    if all_data:
+        header = all_data[0].keys()
+        log_sheet.append_row(list(header))
+
+        # Append the filtered rows
+        for row in rows_to_keep:
+            log_sheet.append_row([row[col] for col in header])
+
+    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned, rows_to_keep
 
 
 # 🛠 Helper: Get historical closes
@@ -48,9 +68,7 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     to_date = datetime.now(UTC)
     from_date = datetime.now(UTC) - timedelta(days=days_buffer)
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
-                                     start=from_date,
-                                     resolution=Constants.Resolutions.DAY)
-
+                                     start=from_date, resolution=Constants.Resolutions.DAY)
     closes = hist['c']
     close_rev = closes[::-1]
     return close_rev[:n] if len(close_rev) >= n else []
@@ -205,14 +223,14 @@ def check_ceiling_and_funds():
     total_positions = len(positions["data"]["net"])
     st.info("total positions " + str(total_positions))
     if total_positions >= 14:
-        st.error("Total holdings ceiling limit reached. Exiting 🚨 ")
+        st.error("Total holdings ceiling limit reached. Exiting 🚨 🚨 🚨")
         st.stop()
 
     funds_resp = client.funds()
     funds = funds_resp['nse']['net_available']
     st.info("funds : " + str(funds))
     if funds < 20000:
-        st.error("Gareeb pase daal! Exiting 🚨")
+        st.error("Gareeb pase daal! Exiting 🚨 🚨 🚨")
         st.stop()
 
 
@@ -265,16 +283,14 @@ else:
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
-
+            positions = client.positions()
+            existing_positions = get_current_portfolio()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
-            positions = client.positions()
 
             sell_or_take_delivery()
             check_ceiling_and_funds()
-
-            existing_positions = get_current_portfolio()
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
