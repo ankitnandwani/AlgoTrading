@@ -316,6 +316,7 @@ def get_access_token():
     access_token = api_response.access_token
     return access_token
 
+
 def get_stock_list():
     exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "SWIGGY"}
     # Fallback lists in case NSE fetch fails
@@ -340,6 +341,7 @@ def get_stock_list():
     nifty100_lst = nifty50_list + nifty_next50_list
     penny_etf_lst = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
     return nifty100_lst, penny_etf_lst
+
 
 # 🔐 UI Components
 st.title("📊 Nifty Shop + Penny ETF")
@@ -382,6 +384,8 @@ else:
 
             funds_resp = user_api.get_user_fund_margin(api_version)
             st.info("funds_resp : " + str(funds_resp))
+            funds = funds_resp["data"]["equity"]["available_margin"]
+
             portfolio = portfolio_api.get_holdings(api_version)
             existing_orders = order_apiv1.get_order_book(api_version=api_version)
             order_summary = get_order_history()
