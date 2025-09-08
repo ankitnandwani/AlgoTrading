@@ -200,6 +200,22 @@ def filter_top3_in_holdings(top3stocks):
 
     return False
 
+
+def check_ceiling_and_funds():
+    total_positions = len(positions["data"]["net"])
+    st.info("total positions " + str(total_positions))
+    if total_positions >= 14:
+        st.error("Total holdings ceiling limit reached. Exiting 🚨 ")
+        st.stop()
+
+    funds_resp = client.funds()
+    funds = funds_resp['nse']['net_available']
+    st.info("funds : " + str(funds))
+    if funds < 20000:
+        st.error("Gareeb pase daal! Exiting 🚨")
+        st.stop()
+
+
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def sell_or_take_delivery():
@@ -249,22 +265,14 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
 
-            funds_resp = client.funds()
-            funds = funds_resp['nse']['net_available']
-            st.info("funds : " + str(funds))
-            if funds<20000:
-                st.error("Gareeb pase daal! Exiting 🚨")
-                st.stop()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
             positions = client.positions()
-            total_positions = len(positions["data"]["net"])
-            st.info("total positions " + str(total_positions))
+
             sell_or_take_delivery()
-            if total_positions >= 14:
-                st.error("Total holdings ceiling limit reached. Exiting 🚨 ")
-                st.stop()
+            check_ceiling_and_funds()
+
             existing_positions = get_current_portfolio()
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
