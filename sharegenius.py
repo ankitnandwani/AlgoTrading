@@ -236,8 +236,6 @@ def sell_or_take_delivery():
         quantity = holding["quantity"]
         symbol = holding["symbol"]
         ltp = last_trading_price["NSE_EQ-" + str(instrument_key)]
-        st.info("symbol : " + symbol)
-        st.info("avg_buy_price : " + str(avg_buy_price))
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
 
         matched_rows = [row for row in all_logs if str(row["Instrument Key"]) == str(instrument_key)]
