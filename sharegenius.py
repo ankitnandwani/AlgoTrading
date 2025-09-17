@@ -9,6 +9,7 @@ from google.oauth2.service_account import Credentials
 from vortex_api import VortexAPI, Constants
 
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
+min_investment = 20000
 
 
 def google_auth():
@@ -121,7 +122,6 @@ def log_buy_order_to_sheet(order_details):
 
 
 def buy(instrument_key, ltp, symbol):
-    min_investment = 10000
     quantity = max(1, math.ceil((min_investment / ltp) * 2))
 
     # Display order details
@@ -184,7 +184,8 @@ def sell(instrument_key, ltp, quantity):
 
 def get_current_portfolio():
     existing_pos = {item["token"] for item in positions["data"]["net"]}
-    return existing_pos
+    existing_holds = {item["token"] for item in holdings["data"]["net"]}
+    return existing_pos + existing_holds
 
 
 def filter_top3_in_holdings(top3stocks):
@@ -211,7 +212,7 @@ def check_ceiling_and_funds():
     funds_resp = client.funds()
     funds = funds_resp['nse']['net_available']
     st.info("funds : " + str(funds))
-    if funds < 20000:
+    if funds < min_investment * 2:
         st.error("Gareeb pase daal! Exiting 🚨")
         st.stop()
 
@@ -270,6 +271,8 @@ else:
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
             positions = client.positions()
+            holdings = client.holdings()
+            st.info("holdings : " + str(holdings))
 
             sell_or_take_delivery()
             check_ceiling_and_funds()
