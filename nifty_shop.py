@@ -11,6 +11,7 @@ import streamlit as st
 from ta.momentum import RSIIndicator
 
 UTC = timezone.utc
+min_investment = 20000
 
 st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
 
@@ -120,7 +121,6 @@ def buy(instrument_key, ltp):
     else:
         is_amo = True
 
-    min_investment = 20000
     quantity = max(1, math.ceil(min_investment / ltp))
 
     # Display order details
@@ -385,7 +385,7 @@ else:
             funds_resp = user_api.get_user_fund_margin(api_version)
             funds = funds_resp.data['equity'].available_margin
             st.info("Available funds : " + str(funds))
-            if funds < 40000:
+            if funds < min_investment * 2:
                 st.error("Gareeb pase daal! Exiting 🚨🚨🚨")
                 st.stop()
 
