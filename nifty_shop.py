@@ -120,7 +120,7 @@ def buy(instrument_key, ltp):
     else:
         is_amo = True
 
-    min_investment = 10000
+    min_investment = 20000
     quantity = max(1, math.ceil(min_investment / ltp))
 
     # Display order details
@@ -384,8 +384,12 @@ else:
 
             funds_resp = user_api.get_user_fund_margin(api_version)
             st.info("funds_resp : " + str(funds_resp))
-            # funds = funds_resp.data['equity']['available_margin']
-            # st.info("Available funds : " + str(funds))
+            fundsdata = funds_resp.data
+            st.info("fundsdata : " + str(fundsdata))
+            fundsdataequity = funds_resp.data['equity']
+            st.info("fundsdataequity : " + str(fundsdataequity))
+            funds = funds_resp.data['equity']['available_margin']
+            st.info("Available funds : " + str(funds))
 
             portfolio = portfolio_api.get_holdings(api_version)
             existing_orders = order_apiv1.get_order_book(api_version=api_version)
