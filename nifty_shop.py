@@ -388,7 +388,7 @@ else:
             st.info("fundsdata : " + str(fundsdata))
             fundsdataequity = funds_resp.data['equity']
             st.info("fundsdataequity : " + str(fundsdataequity))
-            funds = funds_resp.data['equity']['available_margin']
+            funds = funds_resp.data['equity'].available_margin
             st.info("Available funds : " + str(funds))
 
             portfolio = portfolio_api.get_holdings(api_version)
