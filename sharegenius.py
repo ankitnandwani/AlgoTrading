@@ -11,15 +11,13 @@ from vortex_api import VortexAPI, Constants
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
 min_investment = 20000
 
+def get_spreadsheet():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+    gclient = gspread.authorize(creds)
+    return gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
 
 def google_auth():
-    # Define scope and load credentials
-    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-
-    # Authorize and open the sheet
-    gclient = gspread.authorize(creds)
-    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
     top_nifty_shop = ss.worksheet("Top 10 Nifty Stocks Shop")
@@ -41,7 +39,27 @@ def google_auth():
     top_nifty_shop_cleaned = [code.replace("NSE:", "").strip() for code in top_nifty_shop_cleaned]
 
     all_data = log_sheet.get_all_records()
-    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned, all_data
+
+    # Collect rows to keep
+    rows_to_keep = []
+
+    for row in all_data:
+        if row['Instrument Key'] in existing_positions:
+            rows_to_keep.append(row)
+
+    # Clear the sheet
+    log_sheet.clear()
+
+    # Write header again
+    if all_data:
+        header = all_data[0].keys()
+        log_sheet.append_row(list(header))
+
+        # Append the filtered rows
+        for row in rows_to_keep:
+            log_sheet.append_row([row[col] for col in header])
+
+    return etf_shop_cleaned, jewellers_shop_cleaned, top_nifty_shop_cleaned, rows_to_keep
 
 
 # 🛠 Helper: Get historical closes
@@ -49,9 +67,7 @@ def get_last_n_closes(instrument_token, n=20, days_buffer=60):
     to_date = datetime.now(UTC)
     from_date = datetime.now(UTC) - timedelta(days=days_buffer)
     hist = client.historical_candles(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_token, to=to_date,
-                                     start=from_date,
-                                     resolution=Constants.Resolutions.DAY)
-
+                                     start=from_date, resolution=Constants.Resolutions.DAY)
     closes = hist['c']
     close_rev = closes[::-1]
     return close_rev[:n] if len(close_rev) >= n else []
@@ -112,12 +128,7 @@ def compute_top3(shop):
 
 
 def log_buy_order_to_sheet(order_details):
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
-    gclient = gspread.authorize(creds)
-    ss = gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
     log_sheet = ss.worksheet("Buy Orders Log")
-
     log_sheet.append_row(order_details)
 
 
@@ -206,14 +217,14 @@ def check_ceiling_and_funds():
     total_positions = len(positions["data"]["net"])
     st.info("total positions " + str(total_positions))
     if total_positions >= 14:
-        st.error("Total holdings ceiling limit reached. Exiting 🚨 ")
+        st.error("Total holdings ceiling limit reached. Exiting 🚨 🚨 🚨")
         st.stop()
 
     funds_resp = client.funds()
     funds = funds_resp['nse']['net_available']
     st.info("funds : " + str(funds))
     if funds < min_investment * 2:
-        st.error("Gareeb pase daal! Exiting 🚨")
+        st.error("Gareeb pase daal! Exiting 🚨 🚨 🚨")
         st.stop()
 
 
@@ -266,18 +277,15 @@ else:
         try:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
-
+            positions = client.positions()
+            existing_positions = get_current_portfolio()
+            ss = get_spreadsheet()
             etf, jewel, nifty, all_logs = google_auth()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
-            positions = client.positions()
-            holdings = client.holdings()
-            st.info("holdings : " + str(holdings))
 
             sell_or_take_delivery()
             check_ceiling_and_funds()
-
-            existing_positions = get_current_portfolio()
 
             st.info("ETF SHOP : " + str(etf) + " count : " + str(len(etf)))
             etf3 = compute_top3(etf)
