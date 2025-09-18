@@ -250,18 +250,15 @@ def get_order_history():
 def averaging(stock_list, is_buy_done, is_rsi):
     candidates = []
 
-    st.info("portfolio count : " + str(len(portfolio.data)))
     for item in portfolio.data:
-        st.info("new item")
-        st.info("item : " + str(item))
         if item.tradingsymbol not in stock_list:
             continue
 
         info = order_summary.get(item.tradingsymbol)
-        st.info("info : " + str(info))
+        if not info:
+            continue
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
         order_count = info.get("buy_count", 0)
-        st.info("order_count : " + str(order_count))
 
         # Skip if quantity is 0 or avg price is 0
         if item.quantity == 0 or not last_buy_price:
@@ -281,23 +278,12 @@ def averaging(stock_list, is_buy_done, is_rsi):
                 "order_count": order_count
             })
 
-        st.info("deviation : " + str(deviation))
-        st.info("get idea")
-        dd = deviation >= 6.28
-        st.info("is deviation >= 6.28 : " + str(dd))
         if deviation >= 6.28:
-            st.info("before sell")
             sell(item.instrument_token, ltp)
-            st.info("after sell")
-
-    st.info("no idea")
-    st.info("candidates pre : " + str(candidates))
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
         return
-
-    st.info("candidates : " + str(candidates))
 
     if (is_rsi and is_buy_done) or (not is_rsi and is_buy_done):
         st.info("Buy order already placed, skipping averaging")
@@ -434,8 +420,6 @@ else:
                 st.info("No qualifying stocks found.")
 
             averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
-
-            st.info("averaging done")
 
             is_rsi_algo = False
             st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
