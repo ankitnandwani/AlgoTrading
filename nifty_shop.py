@@ -250,7 +250,9 @@ def get_order_history():
 def averaging(stock_list, is_buy_done, is_rsi):
     candidates = []
 
+    st.info("portfolio count : " + str(len(portfolio.data)))
     for item in portfolio.data:
+        st.info("curr item : " + str(item))
         if item.tradingsymbol not in stock_list:
             continue
 
