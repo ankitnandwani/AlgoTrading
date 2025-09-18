@@ -252,6 +252,8 @@ def averaging(stock_list, is_buy_done, is_rsi):
 
     st.info("portfolio count : " + str(len(portfolio.data)))
     for item in portfolio.data:
+        st.info("new item")
+        st.info("item : " + str(item))
         if item.tradingsymbol not in stock_list:
             continue
 
