@@ -267,7 +267,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
         st.info(
             item.trading_symbol + f" has deviation = {deviation:.2f}% (current price {ltp} vs last buy {last_buy_price})")
 
-        if deviation < -3.14:
+        if deviation <= -3.14:
             candidates.append({
                 "instrument_token": item.instrument_token,
                 "ltp": ltp,
@@ -276,8 +276,10 @@ def averaging(stock_list, is_buy_done, is_rsi):
                 "order_count": order_count
             })
 
-        if deviation > 6.28:
+        if deviation >= 6.28:
             sell(item.instrument_token, ltp)
+
+    st.info("candidates pre : " + str(candidates))
 
     if not candidates:
         st.info("No eligible stock found in portfolio for averaging.")
@@ -420,6 +422,8 @@ else:
                 st.info("No qualifying stocks found.")
 
             averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
+
+            st.info("averaging done")
 
             is_rsi_algo = False
             st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
