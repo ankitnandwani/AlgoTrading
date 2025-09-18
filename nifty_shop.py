@@ -279,11 +279,13 @@ def averaging(stock_list, is_buy_done, is_rsi):
             })
 
         st.info("deviation : " + str(deviation))
+        st.info("get idea")
         if deviation >= 6.28:
             st.info("before sell")
             sell(item.instrument_token, ltp)
             st.info("after sell")
 
+    st.info("no idea")
     st.info("candidates pre : " + str(candidates))
 
     if not candidates:
