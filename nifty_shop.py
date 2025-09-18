@@ -258,7 +258,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
         info = order_summary.get(item.tradingsymbol)
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
         order_count = info.get("buy_count", 0)
-        st.info("order_count : " + order_count)
+        st.info("order_count : " + str(order_count))
 
         # Skip if quantity is 0 or avg price is 0
         if item.quantity == 0 or not last_buy_price:
