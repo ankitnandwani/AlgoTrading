@@ -252,13 +252,13 @@ def averaging(stock_list, is_buy_done, is_rsi):
 
     st.info("portfolio count : " + str(len(portfolio.data)))
     for item in portfolio.data:
-        st.info("curr item : " + str(item))
         if item.tradingsymbol not in stock_list:
             continue
 
         info = order_summary.get(item.tradingsymbol)
         last_buy_price = float(info.get("last_buy_price", 0) or 0)
         order_count = info.get("buy_count", 0)
+        st.info("order_count : " + order_count)
 
         # Skip if quantity is 0 or avg price is 0
         if item.quantity == 0 or not last_buy_price:
@@ -278,8 +278,11 @@ def averaging(stock_list, is_buy_done, is_rsi):
                 "order_count": order_count
             })
 
+        st.info("deviation : " + str(deviation))
         if deviation >= 6.28:
+            st.info("before sell")
             sell(item.instrument_token, ltp)
+            st.info("after sell")
 
     st.info("candidates pre : " + str(candidates))
 
