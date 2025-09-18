@@ -283,6 +283,8 @@ def averaging(stock_list, is_buy_done, is_rsi):
         st.info("No eligible stock found in portfolio for averaging.")
         return
 
+    st.info("candidates : " + str(candidates))
+
     if (is_rsi and is_buy_done) or (not is_rsi and is_buy_done):
         st.info("Buy order already placed, skipping averaging")
         return
