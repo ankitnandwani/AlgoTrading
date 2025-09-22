@@ -82,12 +82,11 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
     for sym in stock_list:
         try:
             instrument_key = symbol_to_key.get(sym)
-            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
             ltp = last_trading_price["NSE_EQ:" + str(sym)]
-            if not ltp:
+            if ltp is None:
                 continue
 
             if is_rsi:
