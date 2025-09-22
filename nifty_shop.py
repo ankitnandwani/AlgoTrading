@@ -44,9 +44,7 @@ def get_ltp():
     ]
 
     instrument_key_str = ",".join(instrument_tokens)
-    st.info("instrument_key_str : " + str(instrument_key_str))
     response = quote_api.get_ltp(instrument_key=instrument_key_str)
-    st.info("response : " + str(response))
 
     last_trade_prices = {}
 
@@ -82,7 +80,6 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
     results = []
 
     for sym in stock_list:
-        st.info("sym : " + str(sym))
         try:
             instrument_key = symbol_to_key.get(sym)
             st.info("instrument_key : " + str(instrument_key))
@@ -90,7 +87,9 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
                 continue
 
             ltp = last_trading_price["NSE_EQ:" + str(sym)]
-            st.info("ltp : " + str(ltp))
+            if not ltp:
+                continue
+
             if is_rsi:
                 closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
                 rsi = get_rsi_upstox(closes)
