@@ -84,6 +84,7 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
         st.info("sym : " + str(sym))
         try:
             instrument_key = symbol_to_key.get(sym)
+            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
