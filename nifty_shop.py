@@ -85,8 +85,10 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
             if not instrument_key:
                 continue
 
-            ltp = last_trading_price["NSE_EQ:" + str(sym)]
-            if ltp is None:
+            try:
+                ltp = last_trading_price["NSE_EQ:" + str(sym)]
+            except KeyError:
+                st.error("ltp not found for " + sym)
                 continue
 
             if is_rsi:
