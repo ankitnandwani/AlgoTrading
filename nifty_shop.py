@@ -44,6 +44,7 @@ def get_ltp():
     ]
 
     instrument_key_str = ",".join(instrument_tokens)
+    st.info("instrument_key_str : " + str(instrument_key_str))
     response = quote_api.get_ltp(instrument_key=instrument_key_str)
 
     last_trade_prices = {}
