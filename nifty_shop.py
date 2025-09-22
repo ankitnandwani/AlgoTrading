@@ -83,11 +83,11 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
         st.info("sym : " + str(sym))
         try:
             instrument_key = symbol_to_key.get(sym)
-            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
             ltp = last_trading_price["NSE_EQ:" + str(sym)]
+            st.info("ltp : " + str(ltp))
             if is_rsi:
                 closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
                 rsi = get_rsi_upstox(closes)
