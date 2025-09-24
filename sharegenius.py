@@ -233,6 +233,7 @@ def check_ceiling_and_funds():
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def sell_or_take_delivery():
+    st.info("positions : " + str(positions))
     for holding in positions["data"]["net"]:
         avg_buy_price = holding["average_price"]
         instrument_key = holding["token"]
@@ -281,7 +282,6 @@ else:
             token_resp = client.exchange_token(auth_token)
             positions = client.positions()
             holdings = client.holdings()
-            st.info("holdings : " + str(holdings))
             existing_positions = get_current_portfolio()
             ss = get_spreadsheet()
             etf, jewel, nifty, all_logs = google_auth()
