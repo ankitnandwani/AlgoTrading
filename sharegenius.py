@@ -233,8 +233,8 @@ def check_ceiling_and_funds():
 # all 5 stocks available for buy are already in portfolio
 # so we will average our worst performer from the list with cmp
 def sell_or_take_delivery():
-    st.info("positions : " + str(positions))
     for holding in positions["data"]["net"]:
+        st.info("holding : " + str(holding))
         avg_buy_price = holding["average_price"]
         instrument_key = holding["token"]
         quantity = holding["quantity"]
