@@ -17,6 +17,7 @@ def get_spreadsheet():
     gclient = gspread.authorize(creds)
     return gclient.open_by_key(st.secrets["GOOGLE_SHEET_ID"])
 
+
 def google_auth():
     etf_shop = ss.worksheet("ETF shop")
     jewellers_shop = ss.worksheet("Jewellers Shop")
@@ -216,7 +217,7 @@ def filter_top3_in_holdings(top3stocks):
 
 
 def check_ceiling_and_funds():
-    total_positions = len(positions["data"]["net"])
+    total_positions = len(existing_positions)
     st.info("total positions " + str(total_positions))
     if total_positions >= 14:
         st.error("Total holdings ceiling limit reached. Exiting 🚨 🚨 🚨")
