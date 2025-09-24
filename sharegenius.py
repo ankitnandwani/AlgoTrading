@@ -234,7 +234,6 @@ def check_ceiling_and_funds():
 # so we will average our worst performer from the list with cmp
 def sell_or_take_delivery():
     for holding in positions["data"]["net"]:
-        st.info("holding : " + str(holding))
         avg_buy_price = holding["average_price"]
         instrument_key = holding["token"]
         quantity = holding["quantity"]
@@ -243,7 +242,6 @@ def sell_or_take_delivery():
         deviation = ((ltp - avg_buy_price) / avg_buy_price) * 100
 
         matched_rows = [row for row in all_logs if str(row["Instrument Key"]) == str(instrument_key)]
-        st.info("matched_rows : " + str(matched_rows))
         if matched_rows:
             order_date_str = matched_rows[0]["Order date"]  # Assuming first column header is "Timestamp"
             order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
