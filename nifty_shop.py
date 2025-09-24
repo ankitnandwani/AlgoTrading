@@ -37,9 +37,6 @@ def get_last_n_closes(instrument_key, n, days_buffer):
 
 # 🛠 Helper: Get live LTP
 def get_ltp():
-    st.info("ADANIPOWER ltp")
-    resp = quote_api.get_ltp(instrument_key="NSE_EQ|INE814H01029")
-    st.info("resp : " + str(resp))
     instrument_tokens = [
         symbol_to_key.get(symbol)
         for symbol in all_products
