@@ -11,6 +11,7 @@ from vortex_api import VortexAPI, Constants
 st.set_page_config(page_title="Share Genius Mall", layout="centered")
 min_investment = 20000
 
+
 def get_spreadsheet():
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
@@ -196,9 +197,7 @@ def sell(instrument_key, ltp, quantity):
 
 def get_current_portfolio():
     existing_pos = {item["token"] for item in positions["data"]["net"]}
-    st.info("existing_pos : " + str(existing_pos))
     existing_holds = {item["nse"]["token"] for item in holdings["data"]}
-    st.info("existing_holds : " + str(existing_holds))
     return list(existing_pos) + list(existing_holds)
 
 
@@ -217,7 +216,6 @@ def filter_top3_in_holdings(top3stocks):
 
 
 def check_ceiling_and_funds():
-    st.info("total_positions : " + str(existing_positions))
     total_positions = len(existing_positions)
     st.info("total positions " + str(total_positions))
     if total_positions >= 14:
