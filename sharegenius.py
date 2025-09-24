@@ -217,6 +217,7 @@ def filter_top3_in_holdings(top3stocks):
 
 
 def check_ceiling_and_funds():
+    st.info("total_positions : " + str(existing_positions))
     total_positions = len(existing_positions)
     st.info("total positions " + str(total_positions))
     if total_positions >= 14:
