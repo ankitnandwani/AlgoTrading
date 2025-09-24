@@ -149,7 +149,7 @@ def buy(instrument_key, ltp, symbol):
         body = client.place_order(exchange=Constants.ExchangeTypes.NSE_EQUITY, token=instrument_key,
                                   transaction_type=Constants.TransactionSides.BUY, product=Constants.ProductTypes.MTF,
                                   variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
-                                  price=ltp, trigger_price=0.0, disclosed_quantity=0,
+                                  price=ltp*1.0, trigger_price=0.0, disclosed_quantity=0,
                                   validity=Constants.ValidityTypes.FULL_DAY)
         st.info("order details : " + str(body))
         if body.get("status") == "success":
@@ -278,6 +278,8 @@ else:
             client = VortexAPI(API_KEY, APPLICATION_ID)
             token_resp = client.exchange_token(auth_token)
             positions = client.positions()
+            holdings = client.holdings()
+            st.info("holdings : " + str(holdings))
             existing_positions = get_current_portfolio()
             ss = get_spreadsheet()
             etf, jewel, nifty, all_logs = google_auth()
