@@ -196,7 +196,7 @@ def sell(instrument_key, ltp, quantity):
 def get_current_portfolio():
     existing_pos = {item["token"] for item in positions["data"]["net"]}
     st.info("existing_pos : " + str(existing_pos))
-    existing_holds = {item["token"] for item in holdings["data"]["nse"]}
+    existing_holds = {item["nse"]["token"] for item in holdings["data"]}
     st.info("existing_holds : " + str(existing_holds))
     return existing_pos & existing_holds
 
