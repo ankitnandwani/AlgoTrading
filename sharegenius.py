@@ -199,7 +199,7 @@ def get_current_portfolio():
     st.info("existing_pos : " + str(existing_pos))
     existing_holds = {item["nse"]["token"] for item in holdings["data"]}
     st.info("existing_holds : " + str(existing_holds))
-    return existing_pos & existing_holds
+    return list(existing_pos) + list(existing_holds)
 
 
 def filter_top3_in_holdings(top3stocks):
