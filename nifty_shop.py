@@ -78,10 +78,8 @@ def load_symbol_to_instrument_key_map(json_file="NSE.json"):
 # ✅ Main computation
 def compute_top5_nifty_below_ma(is_rsi, stock_list):
     results = []
-    st.info("results : " + str(results))
 
     for sym in stock_list:
-        st.info("sym : " + str(sym))
         try:
             instrument_key = symbol_to_key.get(sym)
             if not instrument_key:
@@ -94,9 +92,10 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
                 continue
 
             if is_rsi:
-                st.info("closes start ")
                 closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
-                st.info("closes : " + str(closes))
+                if not closes:
+                    st.info("closes insufficient for " + sym)
+                    continue
                 rsi = get_rsi_upstox(closes)
                 results.append((sym, ltp, rsi, instrument_key))
             else:
@@ -417,9 +416,7 @@ else:
             })
 
             is_rsi_algo = True
-            st.info("is_rsi_algo : " + str(is_rsi_algo))
             all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, nifty100_list)
-            st.info("rsi_below35 : " + str(rsi_below35))
             rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
 
             is_nifty_buy_done = False
