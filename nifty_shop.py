@@ -94,7 +94,7 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
             if is_rsi:
                 closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
                 if not closes:
-                    st.info("closes insufficient for " + sym)
+                    st.error("closes insufficient for " + sym)
                     continue
                 rsi = get_rsi_upstox(closes)
                 results.append((sym, ltp, rsi, instrument_key))
