@@ -83,14 +83,14 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
     for sym in stock_list:
         st.info("sym : " + str(sym))
         try:
-            st.info("instrument key start")
             instrument_key = symbol_to_key.get(sym)
-            st.info("instrument_key : " + str(instrument_key))
             if not instrument_key:
                 continue
 
             try:
+                st.info("ltp start ")
                 ltp = last_trading_price["NSE_EQ:" + str(sym)]
+                st.info("ltp : " + str(ltp))
             except KeyError:
                 st.error("ltp not found for " + sym)
                 continue
