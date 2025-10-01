@@ -37,7 +37,6 @@ def get_last_n_closes(instrument_key, n, days_buffer):
 
 # 🛠 Helper: Get live LTP
 def get_ltp():
-    st.info("start ltp")
     instrument_tokens = [
         symbol_to_key.get(symbol)
         for symbol in all_products
@@ -402,7 +401,6 @@ else:
             order_summary = get_order_history()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
-            st.info("last_trading_price : " + str(last_trading_price))
 
             # Global injection for helper functions
             globals().update({
@@ -415,8 +413,10 @@ else:
             })
 
             is_rsi_algo = True
+            st.info("is_rsi_algo : " + str(is_rsi_algo))
             all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, nifty100_list)
             rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
+            st.info("rsi_map : " + str(rsi_map))
 
             is_nifty_buy_done = False
             if not rsi_below35.empty:
