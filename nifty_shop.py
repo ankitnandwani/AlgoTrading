@@ -401,6 +401,7 @@ else:
             order_summary = get_order_history()
             symbol_to_key = load_symbol_to_instrument_key_map()
             last_trading_price = get_ltp()
+            st.info("last_trading_price : " + str(last_trading_price))
 
             # Global injection for helper functions
             globals().update({
