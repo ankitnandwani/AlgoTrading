@@ -37,6 +37,7 @@ def get_last_n_closes(instrument_key, n, days_buffer):
 
 # 🛠 Helper: Get live LTP
 def get_ltp():
+    st.info("start ltp")
     instrument_tokens = [
         symbol_to_key.get(symbol)
         for symbol in all_products
@@ -325,7 +326,7 @@ def get_access_token():
 
 
 def get_stock_list():
-    exclude = {"NIFTY 50", "HEROMOTOCO", "INDUSINDBK", "NIFTY NEXT 50", "DABUR", "ICICIPRULI", "SWIGGY"}
+    exclude = {"NIFTY 50", "NIFTY NEXT 50"}
     # Fallback lists in case NSE fetch fails
     fallback_nifty50 = ['RELIANCE', 'HDFCBANK', 'TCS', 'BHARTIARTL', 'ICICIBANK', 'SBIN', 'HINDUNILVR', 'INFY', 'BAJFINANCE', 'ITC', 'LT', 'MARUTI', 'M&M', 'KOTAKBANK', 'HCLTECH', 'SUNPHARMA', 'ULTRACEMCO', 'AXISBANK', 'TITAN', 'BAJAJFINSV', 'NTPC', 'ETERNAL', 'ONGC', 'ADANIPORTS', 'BEL', 'POWERGRID', 'ADANIENT', 'JSWSTEEL', 'WIPRO', 'TATAMOTORS', 'BAJAJ-AUTO', 'ASIANPAINT', 'COALINDIA', 'NESTLEIND', 'TATASTEEL', 'JIOFIN', 'TRENT', 'GRASIM', 'SBILIFE', 'EICHERMOT', 'HINDALCO', 'HDFCLIFE', 'TECHM', 'CIPLA', 'APOLLOHOSP', 'SHRIRAMFIN', 'HEROMOTOCO', 'TATACONSUM', 'DRREDDY', 'INDUSINDBK']
     fallback_nifty_next50 = ['ABB', 'ADANIENSOL', 'ADANIGREEN', 'ADANIPOWER', 'AMBUJACEM', 'DMART', 'BAJAJHLDNG', 'BAJAJHFL', 'BANKBARODA', 'BPCL', 'BOSCHLTD', 'BRITANNIA', 'CGPOWER', 'CANBK', 'CHOLAFIN', 'DLF', 'DABUR', 'DIVISLAB', 'GAIL', 'GODREJCP', 'HAVELLS', 'HAL', 'HYUNDAI', 'ICICIGI', 'ICICIPRULI', 'INDHOTEL', 'IOC', 'IRFC', 'NAUKRI', 'INDIGO', 'JSWENERGY', 'JINDALSTEL', 'LTIM', 'LICI', 'LODHA', 'PIDILITIND', 'PFC', 'PNB', 'RECLTD', 'MOTHERSON', 'SHREECEM', 'SIEMENS', 'SWIGGY', 'TVSMOTOR', 'TATAPOWER', 'TORNTPHARM', 'UNITDSPR', 'VBL', 'VEDL', 'ZYDUSLIFE']
