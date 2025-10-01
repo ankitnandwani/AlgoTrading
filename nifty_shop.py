@@ -88,15 +88,15 @@ def compute_top5_nifty_below_ma(is_rsi, stock_list):
                 continue
 
             try:
-                st.info("ltp start ")
                 ltp = last_trading_price["NSE_EQ:" + str(sym)]
-                st.info("ltp : " + str(ltp))
             except KeyError:
                 st.error("ltp not found for " + sym)
                 continue
 
             if is_rsi:
+                st.info("closes start ")
                 closes = get_last_n_closes(instrument_key=instrument_key, n=99, days_buffer=200)
+                st.info("closes : " + str(closes))
                 rsi = get_rsi_upstox(closes)
                 results.append((sym, ltp, rsi, instrument_key))
             else:
