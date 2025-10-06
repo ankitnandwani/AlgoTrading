@@ -350,7 +350,22 @@ def get_stock_list():
 
     nifty100_lst = nifty50_list + nifty_next50_list
     penny_etf_lst = ['TATAGOLD', 'TATSILV', 'METALIETF', 'ABSLPSE', 'GROWWNIFTY', 'GROWWPOWER', 'GROWWLOVOL']
-    return nifty100_lst, penny_etf_lst
+
+    fallback_mcap50 = ['RELIANCE', 'HDFCBANK', 'TCS', 'BHARTIARTL', 'ICICIBANK', 'SBIN', 'HINDUNILVR', 'INFY',
+                        'BAJFINANCE', 'ITC', 'LT', 'MARUTI', 'M&M', 'KOTAKBANK', 'HCLTECH', 'SUNPHARMA', 'ULTRACEMCO',
+                        'AXISBANK', 'TITAN', 'BAJAJFINSV', 'NTPC', 'ETERNAL', 'ONGC', 'ADANIPORTS', 'BEL', 'POWERGRID',
+                        'ADANIENT', 'JSWSTEEL', 'WIPRO', 'TATAMOTORS', 'BAJAJ-AUTO', 'ASIANPAINT', 'COALINDIA',
+                        'NESTLEIND', 'TATASTEEL', 'JIOFIN', 'TRENT', 'GRASIM', 'SBILIFE', 'EICHERMOT', 'HINDALCO',
+                        'HDFCLIFE', 'TECHM', 'CIPLA', 'APOLLOHOSP', 'SHRIRAMFIN', 'HEROMOTOCO', 'TATACONSUM', 'DRREDDY',
+                        'INDUSINDBK']
+    try:
+        mcap50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20MIDCAP%2050")
+        mcap50_lst = [stock['symbol'] for stock in mcap50_data['data']]
+        mcap50_lst = [symbol for symbol in mcap50_lst if symbol not in exclude]
+    except Exception as e:
+        st.error(f"Failed to fetch MIDCAP 50 data from NSE: {e}")
+        mcap50_lst = [symbol for symbol in fallback_mcap50 if symbol not in exclude]
+    return nifty100_lst, penny_etf_lst, mcap50_lst
 
 
 # 🔐 UI Components
@@ -376,9 +391,9 @@ else:
     st.success("✅ Successfully logged in with Upstox")
     if st.button("🚀 Run Analysis and Trade"):
         try:
-            nifty100_list, penny_etf_list = get_stock_list()
+            nifty100_list, penny_etf_list, mcap50_list = get_stock_list()
             st.info("nifty100_list : " + str(nifty100_list) + " count : " + str(len(nifty100_list)))
-            all_products = nifty100_list + penny_etf_list
+            all_products = nifty100_list + penny_etf_list + mcap50_list
 
             config = upstox_client.Configuration()
             config.access_token = get_access_token()
@@ -395,8 +410,8 @@ else:
             funds_resp = user_api.get_user_fund_margin(api_version)
             funds = funds_resp.data['equity'].available_margin
             st.info("Available funds : " + str(funds))
-            if funds < min_investment * 2:
-                st.error("Gareeb pase daal! Exiting 🚨🚨🚨")
+            if funds < min_investment * 3:
+                st.error("Gareeb " + str((min_investment * 3) - funds) + " daal! Exiting 🚨🚨🚨")
                 st.stop()
 
             portfolio = portfolio_api.get_holdings(api_version)
@@ -428,6 +443,20 @@ else:
                 st.info("No qualifying stocks found.")
 
             averaging(nifty100_list, is_nifty_buy_done, is_rsi_algo)
+
+            st.info("mcap50_list : " + str(mcap50_list) + " count : " + str(len(mcap50_list)))
+            all_rsi, rsi_below35 = compute_top5_nifty_below_ma(is_rsi_algo, mcap50_list)
+            rsi_map = dict(zip(all_rsi["Symbol"], all_rsi["RSI"]))
+
+            is_mcap_buy_done = False
+            if not rsi_below35.empty:
+                st.subheader("📈 Stocks Below 35 RSI")
+                st.dataframe(rsi_below35)
+                is_mcap_buy_done = get_current_portfolio(rsi_below35)
+            else:
+                st.info("No qualifying stocks found.")
+
+            averaging(mcap50_list, is_mcap_buy_done, is_rsi_algo)
 
             is_rsi_algo = False
             st.info("penny_etf_list : " + str(penny_etf_list) + " count : " + str(len(penny_etf_list)))
