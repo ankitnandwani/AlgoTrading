@@ -13,7 +13,7 @@ from ta.momentum import RSIIndicator
 UTC = timezone.utc
 min_investment = 20000
 
-st.set_page_config(page_title="Nifty Shop RSI", layout="centered")
+st.set_page_config(page_title="Nifty + Mcap + Penny ETF Shop RSI", layout="centered")
 
 
 def get_rsi_upstox(closes):
@@ -369,7 +369,7 @@ def get_stock_list():
 
 
 # 🔐 UI Components
-st.title("📊 Nifty Shop + Penny ETF")
+st.title("📊 Nifty 100 + Midcap 50 + Penny ETF Shop")
 
 login_api = upstox_client.LoginApi()
 api_version = '2.0'
