@@ -312,8 +312,8 @@ def averaging(stock_list, is_buy_done, is_rsi):
                     (order_count == 6 and rsi < 5)):
                 buy(stock['instrument_token'], stock['ltp'])
                 st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
-            else:
-                st.info("No stock met RSI rules for averaging.")
+        else:
+            st.info("No stock met RSI rules for averaging.")
     else:
         best_candidate = min(candidates, key=lambda x: x["deviation"])
         buy(best_candidate['instrument_token'], best_candidate['ltp'])
