@@ -184,7 +184,7 @@ def sell(instrument_key, ltp, quantity):
                                   transaction_type=Constants.TransactionSides.SELL,
                                   product=Constants.ProductTypes.MTF,
                                   variety=Constants.VarietyTypes.REGULAR_LIMIT_ORDER, quantity=quantity,
-                                  price=ltp-0.05, trigger_price=0.0, disclosed_quantity=0,
+                                  price=ltp-0.10, trigger_price=0.0, disclosed_quantity=0,
                                   validity=Constants.ValidityTypes.FULL_DAY)
         st.info("order details : " + str(body))
         if body.get("status") == "success":
