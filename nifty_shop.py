@@ -13,7 +13,7 @@ from ta.momentum import RSIIndicator
 UTC = timezone.utc
 min_investment = 20000
 
-st.set_page_config(page_title="Nifty + Mcap + Penny ETF Shop RSI", layout="centered")
+st.set_page_config(page_title="Nifty + Mcap + Scap + Penny ETF Shop RSI", layout="centered")
 
 
 def get_rsi_upstox(closes):
@@ -360,13 +360,7 @@ def get_stock_list():
         st.error(f"Failed to fetch MIDCAP 50 data from NSE: {e}")
         mcap50_lst = [symbol for symbol in fallback_mcap50 if symbol not in exclude]
 
-    fallback_scap50 = ['AARTIIND', 'AUBANK', 'ASHOKLEY', 'AUROPHARMA', 'BSE', 'BHARATFORG', 'BHEL', 'COFORGE',
-                           'COLPAL', 'CUMMINSIND', 'DABUR', 'DIXON', 'FEDERALBNK', 'FORTIS', 'GMRAIRPORT', 'GODREJPROP',
-                           'HDFCAMC', 'HEROMOTOCO', 'HINDPETRO', 'IDFCFIRSTB', 'IRCTC', 'INDUSTOWER', 'INDUSINDBK',
-                           'JUBLFOOD', 'LUPIN', 'MANKIND', 'MARICO', 'MFSL', 'MPHASIS', 'MUTHOOTFIN', 'NHPC', 'NMDC',
-                           'OBEROIRLTY', 'OIL', 'PAYTM', 'OFSS', 'POLICYBZR', 'PIIND', 'PAGEIND', 'PERSISTENT',
-                           'PHOENIXLTD', 'POLYCAB', 'PRESTIGE', 'SBICARD', 'SRF', 'SUPREMEIND', 'SUZLON', 'TIINDIA',
-                           'UPL', 'YESBANK']
+    fallback_scap50 = ['AARTIIND', 'ABREL', 'AEGISLOG', 'AFFLE', 'ARE&M', 'AMBER', 'ANGELONE', 'ASTERDM', 'BANDHANBNK', 'CESC', 'CASTROLIND', 'CDSL', 'CHOLAHLDNG', 'CAMS', 'CROMPTON', 'CYIENT', 'DELHIVERY', 'LALPATHLAB', 'FSL', 'FIVESTAR', 'GLAND', 'HSCL', 'IIFL', 'IEX', 'INOXWIND', 'JBCHEPHARM', 'KARURVYSYA', 'KAYNES', 'KEC', 'KFINTECH', 'LAURUSLABS', 'MANAPPURAM', 'MCX', 'NATCOPHARM', 'NBCC', 'NH', 'NAVINFLUOR', 'NEULANDLAB', 'PGEL', 'PNBHOUSING', 'PPLPHARMA', 'POONAWALLA', 'RADICO', 'REDINGTON', 'RPOWER', 'TATACHEM', 'RAMCOCEM', 'WELCORP', 'WOCKPHARMA', 'ZENSARTECH']
     try:
         scap50_data = nsefetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20SMALLCAP%2050")
         scap50_lst = [stock['symbol'] for stock in scap50_data['data']]
@@ -378,7 +372,7 @@ def get_stock_list():
 
 
 # 🔐 UI Components
-st.title("📊 Nifty 100 + Midcap 50 + Penny ETF Shop")
+st.title("📊 Nifty 100 + Midcap 50 + Smallcap 50 + Penny ETF Shop")
 
 login_api = upstox_client.LoginApi()
 api_version = '2.0'
