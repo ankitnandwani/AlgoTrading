@@ -11,7 +11,7 @@ import streamlit as st
 from ta.momentum import RSIIndicator
 
 UTC = timezone.utc
-min_investment = 20000
+min_investment = 5000
 
 st.set_page_config(page_title="Nifty + Mcap + Scap + Penny ETF Shop RSI", layout="centered")
 
