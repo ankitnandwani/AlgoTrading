@@ -289,7 +289,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
         if deviation >= 6.28:
             sell(item.instrument_token, ltp)
 
-    if (is_rsi and is_buy_done) or (not is_rsi and is_buy_done):
+    if is_buy_done:
         st.info("Buy order already placed, skipping averaging")
         return
 
@@ -312,6 +312,7 @@ def averaging(stock_list, is_buy_done, is_rsi):
                     (order_count == 6 and rsi < 5)):
                 buy(stock['instrument_token'], stock['ltp'])
                 st.success(f"Averaged: {stock['symbol']} @ Deviation {stock['deviation']:.2f}%")
+                return
         else:
             st.info("No stock met RSI rules for averaging.")
     else:
@@ -328,7 +329,7 @@ def get_access_token():
 
 
 def get_stock_list():
-    exclude = {"NIFTY 50", "NIFTY NEXT 50", "NIFTY MIDCAP 50", "NIFTY SMALLCAP 50"}
+    exclude = {"NIFTY 50", "NIFTY NEXT 50", "NIFTY MIDCAP 50", "NIFTY SMALLCAP 50", "BOSCHLTD", "DIXON", "PAGEIND", "SHREECEM"}
     # Fallback lists in case NSE fetch fails
     fallback_nifty50 = ['RELIANCE', 'HDFCBANK', 'TCS', 'BHARTIARTL', 'ICICIBANK', 'SBIN', 'HINDUNILVR', 'INFY', 'BAJFINANCE', 'ITC', 'LT', 'MARUTI', 'M&M', 'KOTAKBANK', 'HCLTECH', 'SUNPHARMA', 'ULTRACEMCO', 'AXISBANK', 'TITAN', 'BAJAJFINSV', 'NTPC', 'ETERNAL', 'ONGC', 'ADANIPORTS', 'BEL', 'POWERGRID', 'ADANIENT', 'JSWSTEEL', 'WIPRO', 'TATAMOTORS', 'BAJAJ-AUTO', 'ASIANPAINT', 'COALINDIA', 'NESTLEIND', 'TATASTEEL', 'JIOFIN', 'TRENT', 'GRASIM', 'SBILIFE', 'EICHERMOT', 'HINDALCO', 'HDFCLIFE', 'TECHM', 'CIPLA', 'APOLLOHOSP', 'SHRIRAMFIN', 'HEROMOTOCO', 'TATACONSUM', 'DRREDDY', 'INDUSINDBK']
     fallback_nifty_next50 = ['ABB', 'ADANIENSOL', 'ADANIGREEN', 'ADANIPOWER', 'AMBUJACEM', 'DMART', 'BAJAJHLDNG', 'BAJAJHFL', 'BANKBARODA', 'BPCL', 'BOSCHLTD', 'BRITANNIA', 'CGPOWER', 'CANBK', 'CHOLAFIN', 'DLF', 'DABUR', 'DIVISLAB', 'GAIL', 'GODREJCP', 'HAVELLS', 'HAL', 'HYUNDAI', 'ICICIGI', 'ICICIPRULI', 'INDHOTEL', 'IOC', 'IRFC', 'NAUKRI', 'INDIGO', 'JSWENERGY', 'JINDALSTEL', 'LTIM', 'LICI', 'LODHA', 'PIDILITIND', 'PFC', 'PNB', 'RECLTD', 'MOTHERSON', 'SHREECEM', 'SIEMENS', 'SWIGGY', 'TVSMOTOR', 'TATAPOWER', 'TORNTPHARM', 'UNITDSPR', 'VBL', 'VEDL', 'ZYDUSLIFE']
