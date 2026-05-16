@@ -404,9 +404,9 @@ else:
             funds_resp = user_api.get_user_fund_margin(api_version)
             funds = funds_resp.data['equity'].available_margin
             st.info("Available funds : " + str(funds))
-            if funds < min_investment * 3:
-                st.error("Gareeb " + str((min_investment * 3) - funds) + " daal! Exiting 🚨🚨🚨")
-                st.stop()
+            # if funds < min_investment * 3:
+            #     st.error("Gareeb " + str((min_investment * 3) - funds) + " daal! Exiting 🚨🚨🚨")
+            #     st.stop()
 
             portfolio = portfolio_api.get_holdings(api_version)
             existing_orders = order_apiv1.get_order_book(api_version=api_version)
